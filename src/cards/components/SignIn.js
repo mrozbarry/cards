@@ -8,7 +8,7 @@ export default React.createClass({
   displayName: "SignIn",
 
   propTypes: {
-    auth: object.isRequired
+    firebase: object.isRequired
   },
 
   getInitialState () {
@@ -18,7 +18,14 @@ export default React.createClass({
   },
 
   signInAnonymously () {
-    this.props.auth.signInAnonymously().catch((error) => {
+    this.props.firebase.auth().signInAnonymously().catch((error) => {
+      this.setState({ error: error })
+    })
+  },
+
+  signInWithGithub () {
+    const provider = new this.props.firebase.auth.GithubAuthProvider()
+    this.props.firebase.auth().signInWithPopup(provider).catch((error) => {
       this.setState({ error: error })
     })
   },
@@ -29,8 +36,8 @@ export default React.createClass({
         <div className="sign-in__container">
           {this.renderErrorMessage()}
           <div>Sign in...</div>
-          <a className="button" onClick={this.signInAnonymously}>Anonymously</a>
-          <a className="button" onClick={this.signInAnonymously}>with Github</a>
+          <a className="btn waves-effect waves-light yellow darken-1" onClick={this.signInAnonymously}>Anonymously</a>
+          <a className="btn waves-effect waves-light grey darken-4" onClick={this.signInWithGithub}>with Github</a>
         </div>
       </div>
     )

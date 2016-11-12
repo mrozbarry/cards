@@ -1,4 +1,4 @@
-require("index.css")
+import "./index.css"
 
 import React from "react"
 import { render } from "react-dom"
@@ -82,7 +82,7 @@ const App = React.createClass({
     const { signInShow } = this.state
 
     if (signInShow) {
-      return <SignIn auth={firebase.auth()} />
+      return <SignIn firebase={firebase} />
     } else {
       return null
     }
