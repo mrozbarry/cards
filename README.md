@@ -14,3 +14,4 @@ yarn dev
 # Thanks
 
  - [Free playing cards set](https://superdevresources.com/free-playing-cards-set/)
+ - [Cursor hand mouse click forefinger](https://pixabay.com/en/cursor-hand-mouse-click-forefinger-148819/)
