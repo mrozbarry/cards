@@ -1,0 +1,21 @@
+.sign-in {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 500;
+}
+
+.sign-in__container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: 100px;
+  margin-left: -150px;
+  margin-top: -50px;
+  background-color: #fff;
+  z-index: 501;
+}
