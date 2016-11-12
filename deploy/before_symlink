@@ -1,5 +1,3 @@
-#!/usr/bin/which sh
-
 echo "--------------------- After symlink"
 echo "                      CDing into $EY_DEPLOY_RELEASE_PATH"
 cd ${EY_DEPLOY_RELEASE_PATH}
