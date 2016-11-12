@@ -9,7 +9,6 @@ module.exports = {
   entry: {
     bundle: [
       "react-hot-loader/patch",
-      "webpack-hot-middleware/client",
       path.resolve(ROOT_PATH, "src", "cards", "index")
     ]
   },
@@ -28,9 +27,14 @@ module.exports = {
         loaders: ["babel?cacheDirectory"]
       },
       {
-        test: /\.sss$/,
+        test: /\.css$/,
         include: path.resolve(ROOT_PATH, "src"),
-        loaders: ["style", "css", "postcss?parser=sugarss"]
+        loaders: ["style", "css"]
+      },
+      {
+        test: /\.png/,
+        include: path.resolve(ROOT_PATH, "src"),
+        loaders: ["file"]
       }
     ]
   },

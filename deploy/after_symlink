@@ -1,4 +1,4 @@
 #!/usr/bin/which sh
 
-cd ..
+cd ${EY_DEPLOY_RELEASE_PATH}
 npm run compile
