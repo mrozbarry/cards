@@ -1,0 +1,4 @@
+#!/usr/bin/which sh
+
+cd ..
+npm run compile
