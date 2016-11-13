@@ -22,12 +22,14 @@ export function gameNew (player, numberOfDecks) {
     return Object.assign({}, gameWithDecks, {
       stacks: Object.assign({}, gameWithDecks.stacks, {
         [stackKey]: {
+          _id: stackKey,
           position: [
-            deckIdx * 260,
+            deckIdx * 150,
             350
           ],
           cards: Object.keys(cards),
-          owner: "table"
+          ownedBy: false,
+          faceUp: false
         }
       }),
       cards: Object.assign({}, gameWithDecks.cards, cards)
@@ -41,10 +43,11 @@ function arrayOfSize (size) {
 
 function standard52 (deckIdx) {
   return ["Clubs", "Diamonds", "Hearts", "Spades"].reduce((cards, suit) => {
-    const cardsInSuit = Array.from("A1234567891JQK").reduce((suitCards, face) => {
+    const cardsInSuit = ["A", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, "J", "Q", "K"].reduce((suitCards, face) => {
       const key = `${deckIdx}-${suit}-${face}`
       return Object.assign({}, suitCards, {
         [key]: {
+          _id: key,
           deckIdx: deckIdx,
           suit: suit,
           face: face
@@ -61,4 +64,3 @@ export function gameIsAbandoned (game) {
 
   return Object.keys(players).length === 0
 }
-

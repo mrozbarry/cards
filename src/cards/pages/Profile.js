@@ -1,5 +1,7 @@
 import React from "react"
 
+import GameCard from "components/GameCard"
+
 import GamesMixin from "GamesMixin"
 
 const { object } = React.PropTypes
@@ -96,8 +98,19 @@ export default React.createClass({
           <div className="col s12">
             <h1 className="white-text">Your Games</h1>
           </div>
+          {this.renderProfileGames()}
         </div>
       </div>
     )
+  },
+
+  renderProfileGames () {
+    return this.profileGames().map((game) => {
+      return (
+        <div key={game._id} className="col s12 m6 l4">
+          <GameCard firebase={this.props.firebase} game={game} player={this.props.player} />
+        </div>
+      )
+    })
   }
 })

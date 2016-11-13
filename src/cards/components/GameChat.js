@@ -6,7 +6,7 @@ import GameChatMessage from "components/GameChatMessage"
 
 import _ from "lodash"
 
-const { object, func } = React.PropTypes
+const { object, func, array } = React.PropTypes
 
 export default React.createClass({
   displayName: "GameChat",
@@ -16,7 +16,7 @@ export default React.createClass({
     say: func.isRequired,
     toggleGameText: func.isRequired,
     game: object,
-    players: object
+    players: array
   },
 
   getInitialState () {
@@ -28,14 +28,14 @@ export default React.createClass({
     }
   },
 
-  shouldComponentUpdate (nextProps, nextState) {
-    return !_.matches(nextState)(this.state) ||
-      Object.keys(nextProps.game.messages || {}).length != Object.keys(this.props.game.messages || {}).length
-  },
+  // shouldComponentUpdate (nextProps, nextState) {
+  //   return !_.matches(nextState)(this.state) ||
+  //     Object.keys(nextProps.game.messages || {}).length != Object.keys(this.props.game.messages || {}).length
+  // },
 
   componentWillReceiveProps (nextProps) {
     const { lastMessageKey, isOpen } = this.state
-    const { messages } = nextProps.game
+    const { messages } = nextProps.game || {}
 
     const keys = Object.keys(messages || {})
 
@@ -144,7 +144,7 @@ export default React.createClass({
 
     return Object.keys(messages || {}).map((messageKey) => {
       const message = messages[messageKey]
-      const player = players[message.userId]
+      const player = players.find((p) => p._id == message.userId) //[message.userId]
 
       if (player) {
         return <GameChatMessage key={messageKey} message={message} player={player} />
