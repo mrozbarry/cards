@@ -61,7 +61,7 @@ const App = React.createClass({
   },
 
   render () {
-    if (this.state.authStateHasChanged) {
+    if (this.state.authStateHasChanged === true) {
       return (
         <div>
           {this.renderCurrentRoute()}
@@ -94,24 +94,32 @@ const App = React.createClass({
     return <Home firebase={firebase} player={this.state.player} />
   },
 
+  renderNeedPlayer (component) {
+    if (this.state.player) {
+      return component
+    } else {
+      return this.renderHome()
+    }
+  },
+
   renderGames () {
-    return <GamesList firebase={firebase} player={this.state.player} />
+    return this.renderNeedPlayer(<GamesList firebase={firebase} player={this.state.player} />)
   },
 
   renderGame (gameId) {
     const key = `game-${gameId}`
 
-    return <Game key={key} firebase={firebase} gameId={gameId} editMode={false} player={this.state.player} />
+    return this.renderNeedPlayer(<Game key={key} firebase={firebase} gameId={gameId} editMode={false} player={this.state.player} />)
   },
 
   renderGameWithEdit (gameId) {
     const key = `game-${gameId}`
 
-    return <Game key={key} firebase={firebase} gameId={gameId} editMode={true} player={this.state.player} />
+    return this.renderNeedPlayer(<Game key={key} firebase={firebase} gameId={gameId} editMode={true} player={this.state.player} />)
   },
 
   renderProfile () {
-    return <Profile firebase={firebase} player={this.state.player} />
+    return this.renderNeedPlayer(<Profile firebase={firebase} player={this.state.player} />)
   }
 })
 

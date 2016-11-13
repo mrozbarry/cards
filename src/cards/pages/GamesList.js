@@ -1,5 +1,7 @@
 import React from "react"
 
+import GameCard from "components/GameCard"
+
 import * as Game from "lib/game"
 
 import { navigate } from "react-mini-router"
@@ -17,7 +19,7 @@ export default React.createClass({
 
   propTypes: {
     firebase: object.isRequired,
-    player: object
+    player: object.isRequired
   },
 
   createNewGame (e) {
@@ -28,16 +30,8 @@ export default React.createClass({
 
     const gameRef = firebase.database().ref("games").push()
     gameRef.set(game).then(() => {
-      navigate(`/games/${gameRef.key}/edit`)
+      navigate(`/games/${gameRef.key}`)
     })
-  },
-
-  deleteGame (game, e) {
-    const { firebase } = this.props
-
-    e.preventDefault()
-
-    firebase.database().ref("games").child(game._id).remove()
   },
 
   render () {
@@ -62,47 +56,15 @@ export default React.createClass({
   },
 
   renderGame (game) {
-    const numberOfPlayers = game.players ? Object.keys(game.players || {}).length : 0
+    const { firebase, player } = this.props
+
     return (
       <div className="col s12 m6 l4" key={game._id}>
-        <div className="card teal darken-2">
-          <div className="card-content white-text" style={{ height: "300px"}}>
-            <h3>{game.name}</h3>
-            <div className="truncate">
-              {numberOfPlayers} / {game.maxPlayers}
-            </div>
-          </div>
-          {this.renderGameActions(game)}
-        </div>
+        <GameCard firebase={firebase} player={player} game={game} />
       </div>
     )
   },
 
-  renderGameActions (game) {
-    const numberOfPlayers = game.players ? Object.keys(game.players || {}).length : 0
-    if (numberOfPlayers < game.maxPlayers) {
-      const { player } = this.props
-      const gameUrl = `/games/${game._id}`
-
-      let anchors = [
-        <a key="join" href={gameUrl}>Join Game</a>
-      ]
-
-      if (player && game.ownerId === player.userId) {
-        anchors.push(
-          <a key="delete" href="#" onClick={this.deleteGame.bind(this, game)}>Delete Game</a>
-        )
-      }
-
-      return (
-        <div className="card-action">
-          {anchors}
-        </div>
-      )
-    } else {
-      return null
-    }
-  },
 
   renderNewGame () {
     if (this.props.player) {

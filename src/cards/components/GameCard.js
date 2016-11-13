@@ -11,7 +11,19 @@ export default React.createClass({
     player: object.isRequired
   },
 
+  deleteGame (e) {
+    const { firebase, game } = this.props
+
+    e.preventDefault()
+
+    firebase.database().ref("games").child(game._id).remove()
+  },
+
   render () {
+    const { game } = this.props
+
+    const numberOfPlayers = game.players ? Object.keys(game.players || {}).length : 0
+
     return (
       <div className="card teal darken-2">
         <div className="card-content white-text" style={{ height: "300px"}}>
@@ -40,7 +52,7 @@ export default React.createClass({
 
       if (player && game.ownerId === player.userId) {
         anchors.push(
-          <a key="delete" href="#" onClick={this.deleteGame.bind(this, game)}>Delete Game</a>
+          <a key="delete" href="#" onClick={this.deleteGame}>Delete Game</a>
         )
       }
 

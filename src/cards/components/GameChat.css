@@ -1,0 +1,61 @@
+.material-icons[data-count] {
+  position: relative;
+}
+.material-icons[data-count]:after {
+  position: absolute;
+  background-color: #ff5252;
+  font-family: "Roboto", sans-serif;
+  font-size: 12px;
+  color: #fff;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  content: attr(data-count);
+  text-align: center;
+  line-height: 16px;
+  top: 10px;
+  right: 10px;
+  z-index: 9999;
+  padding: 0;
+  margin: 0;
+}
+
+.material-icons[data-count="0"]:after {
+  display: none;
+}
+
+.game-chat {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 999;
+}
+
+.game-chat--icon {
+}
+
+.game-chat--full {
+  background-color: white;
+  color: black;
+  width: 300px;
+  display: flex;
+  flex-flow: column nowrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-top: 5px #b71c1c solid;
+}
+
+.game-chat__close {
+  position: absolute;
+  top: -20px;
+  right: -18px;
+}
+
+.game-chat__messages {
+  max-height: 40%;
+  width: 100%;
+}
+
+.game-chat__you {
+  width: 100%;
+}
