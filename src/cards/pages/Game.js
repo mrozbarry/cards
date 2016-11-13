@@ -38,7 +38,8 @@ export default React.createClass({
   getInitialState () {
     return {
       game: null,
-      gameTextShow: false
+      gameTextShow: false,
+      modalForStackKey: null
     }
   },
 
@@ -110,49 +111,10 @@ export default React.createClass({
     })
   },
 
-  notify (notification) {
-    this.gameRef.child("messages").push({
-      userId: this.props.player.userId,
-      type: "notify",
-      message: notification,
-      createdAt: Date.now()
-    })
-  },
-
   takeTopCard (stackKey, e) {
     if (e) {
       e.preventDefault()
     }
-    const { player } = this.props
-    const { game } = this.state
-    const stack = game.stacks[stackKey]
-    const nextStackCards = stack.cards.slice(0, -1)
-    const myCard = _.last(game.stacks[stackKey].cards)
-
-    if (nextStackCards.length > 0) {
-      this.gameRef.child("stacks").child(stackKey).child("cards").set(nextStackCards)
-    } else {
-      this.gameRef.child("stacks").child(stackKey).remove()
-    }
-
-    const myStackKey = _.findKey(game.stacks, (gStack) => {
-      return gStack.ownedBy == player.userId
-    })
-
-    if (myStackKey) {
-      const myNextCards = game.stacks[myStackKey].cards.concat(myCard)
-      this.gameRef.child("stacks").child(myStackKey).child("cards").set(myNextCards)
-    } else {
-      const ref = this.gameRef.child("stacks").push()
-      ref.set({
-        _id: ref.key,
-        position: [0, 0],
-        cards: [myCard],
-        ownedBy: player.userId,
-        faceUp: false
-      })
-    }
-
   },
 
   dragStartFromHand (stackKey, cardKey, e) {
@@ -206,27 +168,98 @@ export default React.createClass({
 
   // ------------
 
-  dragOverStack (e) {
-    e.preventDefault()
+  dragOverStack (stackKey, e) {
+    if (e.preventDefault) {
+      e.preventDefault()
+    }
     e.dataTransfer.dropEffect = "move"
   },
 
-  dropOntoStack (e) {
+  dropOntoStack (destStackKey, e) {
     const source = JSON.parse(e.dataTransfer.getData("text"))
+    if (source.cardKey) {
+      const nextStackCards = this.state.game.stacks[destStackKey].cards.concat(source.cardKey)
+      this.gameRef.child("stacks").child(destStackKey).child("cards").set(nextStackCards)
+    } else {
+      const sourceCards = this.state.game.stacks[source.stackKey].cards
+      const nextStackCards = this.state.game.stacks[destStackKey].cards.concat(sourceCards)
+      this.gameRef.child("stacks").child(destStackKey).child("cards").set(nextStackCards)
+    }
   },
 
   // ------------
 
-  dragOverPlayer(e) {
-    const source = JSON.parse(e.dataTransfer.get("text"))
-    if (source.cardKey) {
-      e.preventDefault()
-    }
+  showStackOptionsFor (stackKey, e) {
+    e.preventDefault()
+
+    this.setState({
+      modalForStackKey: stackKey
+    })
   },
 
-  dropOntoPlayer (e) {
-    const source = JSON.parse(e.dataTransfer.getData("text"))
-    const svgPosition = this.clientToSvgCoord(e)
+  stackTakeFromTop (e) {
+    e.preventDefault()
+
+    const { modalForStackKey } = this.state
+    const { player } = this.props
+    const { game } = this.state
+    const stack = game.stacks[modalForStackKey]
+    const nextStackCards = stack.cards.slice(0, -1)
+    const myCard = _.last(game.stacks[modalForStackKey].cards)
+
+    if (nextStackCards.length > 0) {
+      this.gameRef.child("stacks").child(modalForStackKey).child("cards").set(nextStackCards)
+    } else {
+      this.gameRef.child("stacks").child(modalForStackKey).remove()
+    }
+
+    const myStackKey = _.findKey(game.stacks, (gStack) => {
+      return gStack.ownedBy == player.userId
+    })
+
+    if (myStackKey) {
+      const myNextCards = game.stacks[myStackKey].cards.concat(myCard)
+      this.gameRef.child("stacks").child(myStackKey).child("cards").set(myNextCards)
+    } else {
+      const ref = this.gameRef.child("stacks").push()
+      ref.set({
+        _id: ref.key,
+        position: [0, 0],
+        cards: [myCard],
+        ownedBy: player.userId,
+        faceUp: false
+      })
+    }
+
+    this.setState({ modalForStackKey: null })
+  },
+
+  stackFlip (e) {
+    e.preventDefault()
+
+    const { modalForStackKey } = this.state
+
+    this.gameRef
+      .child("stacks")
+      .child(modalForStackKey)
+      .child("faceUp")
+      .set(!this.state.game.stacks[modalForStackKey].faceUp)
+
+    this.setState({ modalForStackKey: null })
+  },
+
+  stackShuffle (e) {
+    e.preventDefault()
+
+    const { modalForStackKey } = this.state
+
+    this.gameRef
+      .child("stacks")
+      .child(modalForStackKey)
+      .child("cards")
+      .set(_.shuffle(this.state.game.stacks[modalForStackKey].cards))
+
+    this.setState({ modalForStackKey: null })
   },
 
   render () {
@@ -244,14 +277,58 @@ export default React.createClass({
         <div style={{ position: "absolute", left: "20px", bottom: "20px" }}>
           {this.renderPlayers()}
         </div>
+        {this.renderStackModal()}
       </div>
     )
+  },
+
+  // renderEdit () {
+  //   const { game } = this.state
+  //
+  //   if (!game || !this.props.editMode) {
+  //     return
+  //   }
+  //
+  //   return (
+  //     <div style={{ position: "absolute", left: "50%", width: "400px", marginLeft: "-200px", bottom: 0 }}>
+  //       <h3>Game Configuration</h3>
+  //       
+  //     </div>
+  //   )
+  // },
+
+  renderStackModal () {
+    const { game, modalForStackKey } = this.state
+
+    if (!game) {
+      return null
+    }
+
+    if (modalForStackKey) {
+      const stack = game.stacks[modalForStackKey]
+      return (
+        <div style={{ position: "absolute", left: "50%", width: "400px", marginLeft: "-200px", bottom: 0 }}>
+          <h4>Stack of {stack.cards.length} cards</h4>
+          <div className="collection">
+            <a href="#" className="collection-item" onClick={this.stackTakeFromTop}>Pick up a card</a>
+            <a href="#" className="collection-item" onClick={this.stackFlip}>Flip this stack</a>
+            <a href="#" className="collection-item" onClick={this.stackShuffle}>Shuffle</a>
+          </div>
+        </div>
+      )
+    } else {
+      return null
+    }
   },
 
   renderGameTitle () {
     const { game, gameTextShow } = this.state
 
-    if (gameTextShow) {
+    if (!game) {
+      return null
+    }
+
+    if (gameTextShow || this.props.editMode) {
       return (
         <div className="game-text">
           <h2>{game.name}</h2>
@@ -348,17 +425,17 @@ export default React.createClass({
         const [x, y] = stack.position
 
         return (
-          <g key={stackKey}>
-            <image
-              href={imageHref}
-              width={255*0.7}
-              height={380*0.7}
-              x={x}
-              y={y}
-              onDoubleClick={this.takeTopCard.bind(this, stackKey)}
-              />
-            <text x={x + (255 * 0.7) - 5} y={y + 20} textAnchor="end">Stack of {stack.cards.length} cards</text>
-          </g>
+          <image
+            key={stackKey}
+            href={imageHref}
+            width={255*0.7}
+            height={380*0.7}
+            x={x}
+            y={y}
+            onClick={this.showStackOptionsFor.bind(this, stackKey)}
+            onDragOver={this.dragOverStack.bind(this, stackKey)}
+            onDrop={this.dropOntoStack.bind(this, stackKey)}
+            />
         )
 
       } else {
