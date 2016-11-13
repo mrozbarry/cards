@@ -43,17 +43,44 @@
   align-items: flex-start;
   justify-content: space-between;
   border-top: 5px #b71c1c solid;
+  border-bottom: 5px #b71c1c solid;
+  bottom: 55px;
+  border-radius: 5px;
 }
 
 .game-chat__close {
   position: absolute;
-  top: -20px;
-  right: -18px;
+  bottom: -36px;
+  right: 0;
 }
 
 .game-chat__messages {
-  max-height: 40%;
+  max-height: 500px;
   width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-chat__messages-item {
+  padding: 5px;
+  padding-bottom: 10px;
+  border-bottom: 1px #dfdfdf solid;
+}
+
+.game-chat__messages-item-who {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.game-chat__messages-item-who > img {
+  margin-right: 10px;
+}
+
+.game-chat__messages-item-text {
+  padding-left: 42px;
 }
 
 .game-chat__you {

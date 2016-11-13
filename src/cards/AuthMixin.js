@@ -16,6 +16,7 @@ export default {
   },
 
   handleAuthStateChanged (currentUser) {
+    console.log("handleAuthStateChanged", currentUser)
     if (currentUser) {
       this.setState({
         currentUser: currentUser,

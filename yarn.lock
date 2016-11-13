@@ -3693,6 +3693,10 @@ uuid, uuid@^2.0.2:
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-2.0.3.tgz#67e2e863797215530dff318e5bf9dcebfd47b21a"
 
+vague-time:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/vague-time/-/vague-time-2.4.0.tgz#f41eb8a61f50f1f5017872db25e595917637f8b7"
+
 vary@~1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.0.tgz#e1e5affbbd16ae768dd2674394b9ad3022653140"

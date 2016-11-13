@@ -95,10 +95,28 @@ const App = React.createClass({
   },
 
   renderNeedPlayer (component) {
-    if (this.state.player) {
+    if ((this.state.player != null) && (this.state.currentUser != null)) {
       return component
-    } else {
+    } else if (!this.state.currentUser) {
       return this.renderHome()
+    } else {
+      return (
+        <div className="preloader-wrapper big active">
+          <div className="spinner-layer spinner-blue-only">
+            <div className="circle-clipper left">
+              <div className="circle" />
+            </div>
+
+            <div className="gap-patch">
+              <div className="circle" />
+            </div>
+
+            <div className="circle-clipper right">
+              <div className="circle" />
+            </div>
+          </div>
+        </div>
+      )
     }
   },
 

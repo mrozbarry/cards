@@ -141,11 +141,21 @@ export default React.createClass({
     }
   },
 
+  renderStacks () {
+    const { game } = this.state
+  },
+
   renderCursors () {
     const { player } = this.props
-    const { game, players } = this.state
+
+    const players = this.state.players || {}
+    const game = this.state.game || {}
 
     return Object.keys(game.players || {}).map((playerKey) => {
+      if (!players[playerKey]) {
+        return null
+      }
+
       const cursorPlayer = game.players[playerKey]
       if (cursorPlayer.position) {
         const [x, y] = cursorPlayer.position
