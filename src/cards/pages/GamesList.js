@@ -1,90 +1,128 @@
 import React from "react"
 
-import { gameIsAbandoned } from "lib/game"
+import * as Game from "lib/game"
+
+import { navigate } from "react-mini-router"
+
+import GamesMixin from "GamesMixin"
 
 const { object } = React.PropTypes
 
 export default React.createClass({
   displayName: "GamesList",
 
+  mixins: [
+    GamesMixin
+  ],
+
   propTypes: {
-    firebase: object.isRequired
+    firebase: object.isRequired,
+    player: object
   },
 
-  getInitialState () {
-    return {
-      games: [],
-      refresh: Date.now()
-    }
+  createNewGame (e) {
+    const { firebase, player } = this.props
+    e.preventDefault()
+
+    const game = Game.gameNew(player)
+
+    const gameRef = firebase.database().ref("games").push()
+    gameRef.set(game).then(() => {
+      navigate(`/games/${gameRef.key}/edit`)
+    })
   },
 
-  componentWillMount () {
+  deleteGame (game, e) {
     const { firebase } = this.props
 
-    this.gamesRef = firebase.database().ref("games")
-    this.gamesRef.on("value", this.gamesValueChanged)
+    e.preventDefault()
 
-    this.refresher = setInterval(() => {
-      this.setState({ refresh: Date.now() })
-    }, 10000)
-  },
-
-  componentWillUnmount () {
-    this.gamesRef.off("value", this.gamesValueChanged)
-  },
-
-  gamesValueChanged (snapshot) {
-    this.setState({
-      games: this.gamesToArray(snapshot.val())
-    })
-  },
-
-  gamesToArray (games) {
-    if (!games) {
-      return []
-    }
-
-    return Object.keys(games).map((gameId) => {
-      return Object.assign({}, games[gameId], {
-        _id: gameId
-      })
-    })
+    firebase.database().ref("games").child(game._id).remove()
   },
 
   render () {
     return (
       <div className="container">
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th># Players</th>
-            </tr>
-          </thead>
-          <tbody>
-            {this.renderGames()}
-          </tbody>
-        </table>
+        <div className="row">
+          <div className="col s12">
+            <h1 className="white-text">Card Games</h1>
+          </div>
+        </div>
+
+        <div className="row">
+          {this.renderGames()}
+          {this.renderNewGame()}
+        </div>
       </div>
     )
   },
 
   renderGames () {
-    const { games } = this.state
+    return this.state.games.map(this.renderGame)
+  },
 
-    const occuringGames = games.filter((game) => {
-      return !gameIsAbandoned(game)
-    })
+  renderGame (game) {
+    const numberOfPlayers = game.players ? Object.keys(game.players || {}).length : 0
+    return (
+      <div className="col s12 m6 l4" key={game._id}>
+        <div className="card teal darken-2">
+          <div className="card-content white-text" style={{ height: "300px"}}>
+            <h3>{game.name}</h3>
+            <div className="truncate">
+              {numberOfPlayers} / {game.maxPlayers}
+            </div>
+          </div>
+          {this.renderGameActions(game)}
+        </div>
+      </div>
+    )
+  },
 
-    return occuringGames.map((game) => {
-      const playerCount = game.players ? game.players.length : 0
+  renderGameActions (game) {
+    const numberOfPlayers = game.players ? Object.keys(game.players || {}).length : 0
+    if (numberOfPlayers < game.maxPlayers) {
+      const { player } = this.props
+      const gameUrl = `/games/${game._id}`
+
+      let anchors = [
+        <a key="join" href={gameUrl}>Join Game</a>
+      ]
+
+      if (player && game.ownerId === player.userId) {
+        anchors.push(
+          <a key="delete" href="#" onClick={this.deleteGame.bind(this, game)}>Delete Game</a>
+        )
+      }
 
       return (
-        <tr key={game._id}>
-          <td><a href={`/games/${game._id}`}>{game.name}</a></td>
-          <td>{playerCount}</td>
-        </tr>
+        <div className="card-action">
+          {anchors}
+        </div>
       )
-    })
+    } else {
+      return null
+    }
+  },
+
+  renderNewGame () {
+    if (this.props.player) {
+      return (
+        <div className="col s12 m6 l4" key="new">
+          <div className="card teal darken-3">
+            <div className="card-content white-text" style={{ height: "300px"}}>
+              <h3>Create a new game</h3>
+              <p>
+                Take control and create a new game. Share the link with friends and play the way you want!
+              </p>
+            </div>
+            <div className="card-action">
+              <a href="#" onClick={this.createNewGame}>Create Game</a>
+            </div>
+          </div>
+        </div>
+      )
+    } else {
+      return null
+    }
   }
 })

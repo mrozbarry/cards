@@ -1,21 +1,22 @@
 import React from "react"
 
-import * as Game from "lib/game"
+import { navigate } from "react-mini-router"
 
-const { object, string } = React.PropTypes
+const { object, string, bool } = React.PropTypes
 
 export default React.createClass({
   displayName: "Game",
 
   propTypes: {
     firebase: object.isRequired,
-    gameId: string.isRequired
+    gameId: string.isRequired,
+    player: object,
+    editMode: bool
   },
 
   getInitialState () {
     return {
-      game: Game.gameNew({ isAnonymous: true, displayName: "Unknown" }),
-      waitingOnFirstValue: true
+      game: null
     }
   },
 
@@ -27,64 +28,49 @@ export default React.createClass({
   },
 
   componentDidMount () {
-    const { currentUser } = this.props.firebase.auth()
+    this.pinger = setInterval(() => {
+      this.sendPing()
+    }, 2000)
 
-    if (currentUser) {
-      console.log("Setting up pinger")
-      this.pinger = setInterval(() => {
-        this.sendPing(currentUser)
-      }, 2000)
-      this.sendPing(currentUser)
-    }
+    this.sendPing()
   },
 
   componentWillUnmount () {
-    if (this.pinger) {
-      clearInterval(this.pinger)
-      this.pinger = null
-    }
+    clearInterval(this.pinger)
+
     this.gameRef.off("value", this.gameValueChange)
   },
 
   gameValueChange (snapshot) {
-    const { firebase } = this.props
+    const game = snapshot.val()
 
-    this.setState({
-      game: snapshot.val(),
-      waitingOnFirstValue: false
-    }, () => {
-      const { game } = this.state
-      const { currentUser } = firebase.auth()
+    if (!game) {
+      navigate("/games")
 
-      if (!currentUser) {
-        return
-      }
-
-      if (!game || Game.gameIsAbandoned(game)) {
-        console.log("There is no game, should we create one?")
-        this.gameRef.update(Game.gameNew(currentUser))
-      } else {
-        const player = Game.gameGetPlayer(game, currentUser)
-        if (!player) {
-          this.gameRef.child("players").update(
-            Game.gameAddPlayer(game, currentUser).players
-          )
-        }
-      }
-    })
+    } else {
+      this.setState({
+        game: game
+      }, () => {
+      })
+    }
   },
 
-  sendPing (user) {
-    const { players } = Game.gamePingPlayer(this.state.game, user)
-
-    console.log("Ping", this.state.game.players, players)
-    this.gameRef.child("players").set(players)
+  sendPing () {
+    // const { player } = this.props
+    //
+    // if (player) {
+    //   const { players } = Game.gamePingPlayer(this.state.game, player)
+    //
+    //   console.log("Ping", this.state.game.players, players)
+    //   this.gameRef.child("players").set(players)
+    // }
   },
 
   render () {
     return (
       <div>
-        <canvas>No canvas support :(</canvas>
+        <svg ref={(ele) => this.svg = ele} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%", backgroundColor: "#f0f" }} xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid meet">
+        </svg>
       </div>
     )
   }

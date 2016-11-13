@@ -1,77 +1,63 @@
-export function gameNew (user) {
-  return gameAddPlayer({
-    name: user.isAnonymous ? "A new game" : `${user.displayName}'s new game`,
-    ownerId: user.uid,
-    chat: [],
-    players: [],
-    cards: [],
-    stacks: []
-  }, user)
+import uuid from "uuid"
+
+export function gameNew (player, numberOfDecks) {
+  numberOfDecks = Math.min(Math.max(numberOfDecks || 1, 1), 4)
+
+  const defaultGame = {
+    name: player.isAnonymous ? "A new game" : `${player.name}'s new game`,
+    description: "Come join me and play some cards",
+    ownerId: player.userId,
+    chat: {},
+    players: {},
+    stacks: {},
+    cards: {},
+    numberOfDecks: numberOfDecks,
+    maxPlayers: 4,
+    visible: true
+  }
+
+  return arrayOfSize(numberOfDecks).reduce((gameWithDecks, _, deckIdx) => {
+    const stackKey = uuid.v4()
+    return Object.assign({}, gameWithDecks, {
+      stacks: Object.assign({}, gameWithDecks.stacks, {
+        [stackKey]: {
+          position: [
+            deckIdx * 260,
+            350
+          ],
+          owner: "table"
+        }
+      }),
+      cards: Object.assign({}, gameWithDecks.cards, standard52(deckIdx, `stack:${stackKey}`))
+    })
+  }, defaultGame)
+}
+
+function arrayOfSize (size) {
+  return Array.from(" ".repeat(size)).map(() => null)
+}
+
+function standard52 (deckIdx, owner) {
+  return ["Clubs", "Diamonds", "Hearts", "Spades"].reduce((cards, suit) => {
+    const cardsInSuit = Array.from("A1234567891JQK").reduce((suitCards, face) => {
+      const key = `${deckIdx}-${suit}-${face}`
+      return Object.assign({}, suitCards, {
+        [key]: {
+          deckIdx: deckIdx,
+          suit: suit,
+          face: face,
+          owner: owner
+        }
+      })
+    }, cards)
+
+    return Object.assign({}, cards, cardsInSuit)
+  }, {})
 }
 
 export function gameIsAbandoned (game) {
-  const players = game.players || []
-  return players.length === 0 || players.every((player) => {
-    return Date.now() > player.pingedAt + 10000
-  })
+  const players = game.players || {}
+
+  return Object.keys(players).length === 0
 }
 
-export function gameAddPlayer (game, user) {
-  return Object.assign({}, game, {
-    players: (game.players || []).concat({
-      id: user.uid,
-      pingedAt: Date.now()
-    })
-  })
-}
-
-export function gamePingPlayer (game, user) {
-  return Object.assign({}, game, {
-    players: (game.players || []).map((player) => {
-      if (player.id == user.uid) {
-        return Object.assign({}, player, {
-          pingedAt: Date.now()
-        })
-      } else {
-        return player
-      }
-    })
-  })
-}
-
-export function gameRemovePlayer (game, user) {
-  return Object.assign({}, game, {
-    players: (game.players || []).filter((player) => player.id != user.uid),
-    stacks: (game.stacks || []).concat({
-      id: `stack:${user.uid}`,
-      position: [0, 0]
-    }),
-    cards: (game.cards || []).map((card) => {
-      if (card.location == `player:${user.id}`) {
-        return Object.assign({}, card, {
-          location: "stack:${user.id}",
-          visible: false
-        })
-      } else {
-        return card
-      }
-    })
-  })
-}
-
-export function gameGetPlayer (game, user) {
-  return (game.players || []).find((player) => {
-    return player.id == user.uid
-  })
-}
-
-export function gameAddMessage (game, user, message , type) {
-  return Object.assign({}, game, {
-    chat: (game.chat || []).concat({
-      playerId: user.uid,
-      type: type || "message",
-      message: message,
-      createdAt: Date.now()
-    })
-  })
-}

@@ -60,9 +60,7 @@ module.exports = {
   devServer: {
     contentBase: path.resolve(ROOT_PATH, "public"),
     publicPath: "/",
-    historyApiFallback: {
-      index: "/index.html"
-    },
+    historyApiFallback: true,
     compress: false,
     hot: true,
     inline: true,
