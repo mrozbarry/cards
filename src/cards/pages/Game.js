@@ -278,24 +278,66 @@ export default React.createClass({
           {this.renderPlayers()}
         </div>
         {this.renderStackModal()}
+        {this.renderEdit()}
+        {this.renderEditButton()}
       </div>
     )
   },
 
-  // renderEdit () {
-  //   const { game } = this.state
-  //
-  //   if (!game || !this.props.editMode) {
-  //     return
-  //   }
-  //
-  //   return (
-  //     <div style={{ position: "absolute", left: "50%", width: "400px", marginLeft: "-200px", bottom: 0 }}>
-  //       <h3>Game Configuration</h3>
-  //       
-  //     </div>
-  //   )
-  // },
+  renderEditButton () {
+    if (!this.state.game) {
+      return
+    }
+
+    if (this.state.game.ownerId == this.props.player.userId) {
+      const url = `/games/${this.props.gameId}/edit`
+      return (
+        <a href={url} className="white-text" style={{ position: "absolute", top: "20px", left: "20px" }}>
+          <i className="material-icons">edit</i>
+        </a>
+      )
+    } else {
+      return null
+    }
+  },
+
+  renderEdit () {
+    const { game } = this.state
+
+    if (!game || !this.props.editMode) {
+      return
+    }
+
+    return (
+      <div style={{ position: "absolute", left: "50%", width: "400px", marginLeft: "-200px", bottom: 0, backgroundColor: "white", padding: "10px" }}>
+        <h3>Game Configuration</h3>
+
+        <input type="text" placeholder="Name of your game" value={game.name || ""} onChange={this.gameNameChange} />
+        <textarea placeholder="Explain what game you are playing" value={game.description || ""} onChange={this.gameDescriptionChange} />
+
+        <hr />
+        <input type="checkbox" id="visible" checked={game.visible} onChange={this.gameVisibleChange} />
+        <label htmlFor="visible">Is this game visible?</label>
+
+        <br />
+
+        <a className="btn waves-effect waves-light" href={`/games/${this.props.gameId}`}>Done</a>
+
+      </div>
+    )
+  },
+
+  gameNameChange (e) {
+    this.gameRef.child("name").set(e.target.value)
+  },
+
+  gameDescriptionChange (e) {
+    this.gameRef.child("description").set(e.target.value)
+  },
+
+  gameVisibleChange (e) {
+    this.gameRef.child("visible").set(e.target.checked)
+  },
 
   renderStackModal () {
     const { game, modalForStackKey } = this.state
@@ -307,7 +349,7 @@ export default React.createClass({
     if (modalForStackKey) {
       const stack = game.stacks[modalForStackKey]
       return (
-        <div style={{ position: "absolute", left: "50%", width: "400px", marginLeft: "-200px", bottom: 0 }}>
+        <div style={{ position: "absolute", left: "50%", width: "400px", marginLeft: "-200px", bottom: 0, backgroundColor: "white", padding: "10px" }}>
           <h4>Stack of {stack.cards.length} cards</h4>
           <div className="collection">
             <a href="#" className="collection-item" onClick={this.stackTakeFromTop}>Pick up a card</a>
