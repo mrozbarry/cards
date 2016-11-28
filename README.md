@@ -29,6 +29,9 @@ yarn start
  * [ ] Support uploading shared custom cards or decks.
  * [ ] Support uploading shared custom player cursors.
  * [ ] Allow game owners to kick or ban players.
+ * [ ] Visual feedback on the card your cursor is over
+ * [ ] Per card menus the control rotation and actions
+ * [ ] Double click to pick up a card
  * [ ] Sound effects
  * Allow cards that are overlapping to...
    * [ ] Be shuffled
