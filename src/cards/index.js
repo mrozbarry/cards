@@ -5,19 +5,16 @@ import { render } from "react-dom"
 
 import { RouterMixin } from "react-mini-router"
 
-import AuthMixin from "./AuthMixin"
+import AuthMixin from "mixins/AuthMixin"
+
+import Menu from "components/Menu"
 
 import Home from "pages/Home"
 import GamesList from "pages/GamesList"
 import Game from "pages/Game"
-import Profile from "pages/Profile"
-
-import CardMenu from "components/CardMenu"
-import SignIn from "components/SignIn"
-
+import Account from "pages/Account"
 
 import * as firebase from "firebase"
-
 import * as firebaseEnv from "lib/firebase"
 
 firebase.initializeApp(firebaseEnv[process.env.NODE_ENV])
@@ -37,7 +34,7 @@ const App = React.createClass({
     "/games": "renderGames",
     "/games/:id": "renderGame",
     "/games/:id/edit": "renderGameWithEdit",
-    "/profile": "renderProfile"
+    "/account": "renderAccount"
   },
 
   propTypes: {
@@ -46,47 +43,34 @@ const App = React.createClass({
 
   getInitialState () {
     return {
-      signInShow: false
+      currentGameKey: null
     }
   },
 
-  afterAuth () {
-    this.toggleSignIn(false)
-  },
-
-  toggleSignIn (show) {
+  setCurrentGameKey (gameKey) {
     this.setState({
-      signInShow: show
+      currentGameKey: gameKey
     })
   },
 
   render () {
-    if (this.state.authStateHasChanged === true) {
+    if (this.state.authStateHasChanged) {
       return (
-        <div>
+        <div key="root">
           {this.renderCurrentRoute()}
-          <CardMenu
-            player={this.state.player}
-            toggleSignIn={this.toggleSignIn}
+          <Menu
             firebase={this.props.firebase}
+            currentUser={this.state.currentUser}
+            currentGameKey={this.state.currentGameKey}
             />
-          {this.renderSignIn()}
         </div>
       )
     } else {
       return (
-        <div />
+        <div key="root">
+          {this.renderLoading()}
+        </div>
       )
-    }
-  },
-
-  renderSignIn () {
-    const { signInShow } = this.state
-
-    if (signInShow) {
-      return <SignIn firebase={firebase} toggleSignIn={this.toggleSignIn} />
-    } else {
-      return null
     }
   },
 
@@ -94,50 +78,72 @@ const App = React.createClass({
     return <Home firebase={firebase} player={this.state.player} />
   },
 
-  renderNeedPlayer (component) {
-    if ((this.state.player != null) && (this.state.currentUser != null)) {
-      return component
-    } else if (!this.state.currentUser) {
-      return this.renderHome()
-    } else {
-      return (
-        <div className="preloader-wrapper big active">
-          <div className="spinner-layer spinner-blue-only">
-            <div className="circle-clipper left">
-              <div className="circle" />
-            </div>
-
-            <div className="gap-patch">
-              <div className="circle" />
-            </div>
-
-            <div className="circle-clipper right">
-              <div className="circle" />
-            </div>
-          </div>
-        </div>
-      )
-    }
-  },
-
   renderGames () {
-    return this.renderNeedPlayer(<GamesList firebase={firebase} player={this.state.player} />)
+    return (
+      <GamesList
+        firebase={this.props.firebase}
+        currentUser={this.state.currentUser}
+        />
+    )
   },
 
   renderGame (gameId) {
     const key = `game-${gameId}`
 
-    return this.renderNeedPlayer(<Game key={key} firebase={firebase} gameId={gameId} editMode={false} player={this.state.player} />)
+    return (
+      <Game
+        key={key}
+        firebase={this.props.firebase}
+        gameId={gameId}
+        editMode={false}
+        currentUser={this.state.currentUser}
+        setCurrentGameKey={this.setCurrentGameKey}
+        />
+    )
   },
 
   renderGameWithEdit (gameId) {
     const key = `game-${gameId}`
 
-    return this.renderNeedPlayer(<Game key={key} firebase={firebase} gameId={gameId} editMode={true} player={this.state.player} />)
+    return (
+      <Game
+        key={key}
+        firebase={this.props.firebase}
+        gameId={gameId}
+        editMode={true}
+        currentUser={this.state.currentUser}
+        setCurrentGameKey={this.setCurrentGameKey}
+        />
+    )
   },
 
-  renderProfile () {
-    return this.renderNeedPlayer(<Profile firebase={firebase} player={this.state.player} />)
+  renderAccount () {
+    return (
+      <Account
+        firebase={this.props.firebase}
+        currentUser={this.state.currentUser}
+        />
+    )
+  },
+
+  renderLoading () {
+    return (
+      <div className="preloader-wrapper big active">
+        <div className="spinner-layer spinner-blue-only">
+          <div className="circle-clipper left">
+            <div className="circle" />
+          </div>
+
+          <div className="gap-patch">
+            <div className="circle" />
+          </div>
+
+          <div className="circle-clipper right">
+            <div className="circle" />
+          </div>
+        </div>
+      </div>
+    )
   }
 })
 

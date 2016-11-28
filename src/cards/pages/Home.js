@@ -1,7 +1,7 @@
 import React from "react"
 
-import GamesMixin from "GamesMixin"
-import PlayersMixin from "PlayersMixin"
+import GamesMixin from "mixins/GamesMixin"
+import PlayersMixin from "mixins/PlayersMixin"
 
 const { object } = React.PropTypes
 
@@ -29,13 +29,12 @@ export default React.createClass({
   },
 
   getPlayersOnline () {
-    return this.state.players.filter((player) => player.online).length
+    return this.state.players.filter((player) => player.state == "online").length
   },
 
   render () {
     return (
       <div>
-
         <div className="container">
           <div className="row">
             <div className="col s12">

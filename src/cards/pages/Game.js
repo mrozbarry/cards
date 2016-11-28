@@ -2,32 +2,34 @@ import "./Game.css"
 
 import React from "react"
 
+import GameCard from "components/GameCard"
 import GameChat from "components/GameChat"
+import GameEdit from "components/GameEdit"
+import Player from "components/Player"
 
-import PlayersMixin from "PlayersMixin"
+import PlayersMixin from "mixins/PlayersMixin"
 
 import { navigate } from "react-mini-router"
 
 import _ from "lodash"
 
-const { object, string, bool } = React.PropTypes
+const { func, object, string, bool } = React.PropTypes
 
-const imageContext = require.context("assets/", true, /\.png$/)
+// const imageContext = require.context("assets/", true, /\.png$/)
 
-const deckIdxToName = [
-  "Emerald",
-  "Peter River",
-  "Pomegranate",
-  "Sun Flower"
-]
+const CARD_SCALE = 0.7
+const CARD_WIDTH = 255 * CARD_SCALE
+const CARD_HEIGHT = 380 * CARD_SCALE
 
 export default React.createClass({
   displayName: "Game",
 
   propTypes: {
+    setCurrentGameKey: func.isRequired,
+
     firebase: object.isRequired,
     gameId: string.isRequired,
-    player: object,
+    currentUser: object,
     editMode: bool
   },
 
@@ -39,37 +41,37 @@ export default React.createClass({
     return {
       game: null,
       gameTextShow: false,
-      modalForStackKey: null
+      heldStackKey: null
     }
   },
 
   componentWillMount () {
-    const { firebase, gameId, player } = this.props
+    const { firebase, gameId } = this.props
 
     this.gameRef = firebase.database().ref("games").child(gameId)
     this.gameRef.on("value", this.gameValueChange)
 
-    this.playerRef = this.gameRef.child("players").child(player.userId)
+    // this.playerRef = this.gameRef.child("players").child(currentUser.uid)
+    //
+    // this.playerRef.set({
+    //   userId: currentUser.uid,
+    //   position: [0, 0]
+    // })
 
-    this.playerRef.set({
-      userId: player.userId,
-      position: [0, 0],
-      visible: false
-    })
+    //document.addEventListener("mouseup", this.endMoveStack)
 
-    this.submitMousePosition = _.throttle((position) => {
-      this.playerRef.update({
-        position: ["x", "y"].map((axis) => parseInt(position[axis])),
-        visible: true
-      })
-    }, 50)
+    // this.submitMousePosition = (position) => {
+    //   this.playerRef.update({
+    //     position: [position.x, position.y]
+    //   })
+    // }
+
+    this.props.setCurrentGameKey(this.props.gameId)
   },
 
   componentWillUnmount () {
-    const { player } = this.props
-
     this.gameRef.off("value", this.gameValueChange)
-    this.gameRef.child("players").child(player.userId).remove()
+    this.props.setCurrentGameKey(null)
   },
 
   gameValueChange (snapshot) {
@@ -99,12 +101,34 @@ export default React.createClass({
   },
 
   mouseMove (e) {
-    this.submitMousePosition(this.clientToSvgCoord(e))
+    this.moveHeldStackKey(e)
+    //this.submitMousePosition(this.clientToSvgCoord(e))
+  },
+
+  moveHeldStackKey (e) {
+    const { heldStackKey } = this.state
+
+    if (heldStackKey) {
+      let nextPosition = this.clientToSvgCoord(e)
+      nextPosition.x = Math.max(0, nextPosition.x)
+      nextPosition.x = Math.min(1920 - CARD_WIDTH, nextPosition.x)
+      nextPosition.y = Math.max(0, nextPosition.y)
+      nextPosition.y = Math.min(1080 - CARD_HEIGHT, nextPosition.y)
+
+      this
+        .gameRef
+        .child("stacks")
+        .child(heldStackKey)
+        .child("position")
+        .set([nextPosition.x, nextPosition.y])
+    }
   },
 
   say (message) {
+    const { currentUser } = this.props
+
     this.gameRef.child("messages").push({
-      userId: this.props.player.userId,
+      userId: currentUser.uid,
       type: "say",
       message: message,
       createdAt: Date.now()
@@ -115,6 +139,7 @@ export default React.createClass({
     if (e) {
       e.preventDefault()
     }
+    this.stackTakeFromTop(stackKey)
   },
 
   dragStartFromHand (stackKey, cardKey, e) {
@@ -189,32 +214,46 @@ export default React.createClass({
 
   // ------------
 
-  showStackOptionsFor (stackKey, e) {
-    e.preventDefault()
+  beginMoveStack (stackKey, e) {
+    if (e.button != 0) {
+      return
+    }
 
+    e.preventDefault()
+    console.log("beginMoveStack", stackKey)
     this.setState({
-      modalForStackKey: stackKey
+      heldStackKey: stackKey
     })
   },
 
-  stackTakeFromTop (e) {
-    e.preventDefault()
+  endMoveStack (e) {
+    console.log("mouseUp")
+    const { heldStackKey } = this.state
+    if (heldStackKey) {
+      e.preventDefault()
+      this.setState({
+        heldStackKey: null
+      })
+    }
+  },
 
-    const { modalForStackKey } = this.state
-    const { player } = this.props
+  // ------------
+
+  stackTakeFromTop (stackKey) {
+    const { currentUser } = this.props
     const { game } = this.state
-    const stack = game.stacks[modalForStackKey]
+    const stack = game.stacks[stackKey]
     const nextStackCards = stack.cards.slice(0, -1)
-    const myCard = _.last(game.stacks[modalForStackKey].cards)
+    const myCard = _.last(game.stacks[stackKey].cards)
 
     if (nextStackCards.length > 0) {
-      this.gameRef.child("stacks").child(modalForStackKey).child("cards").set(nextStackCards)
+      this.gameRef.child("stacks").child(stackKey).child("cards").set(nextStackCards)
     } else {
-      this.gameRef.child("stacks").child(modalForStackKey).remove()
+      this.gameRef.child("stacks").child(stackKey).remove()
     }
 
     const myStackKey = _.findKey(game.stacks, (gStack) => {
-      return gStack.ownedBy == player.userId
+      return gStack.ownedBy == currentUser.uid
     })
 
     if (myStackKey) {
@@ -226,45 +265,54 @@ export default React.createClass({
         _id: ref.key,
         position: [0, 0],
         cards: [myCard],
-        ownedBy: player.userId,
+        ownedBy: currentUser.uid,
         faceUp: false
       })
     }
-
-    this.setState({ modalForStackKey: null })
   },
 
-  stackFlip (e) {
-    e.preventDefault()
-
-    const { modalForStackKey } = this.state
-
-    this.gameRef
-      .child("stacks")
-      .child(modalForStackKey)
-      .child("faceUp")
-      .set(!this.state.game.stacks[modalForStackKey].faceUp)
-
-    this.setState({ modalForStackKey: null })
+  cardOverlapCount (layeredCards, card) {
+    return layeredCards.filter((layeredCard) => {
+      const left = card.position[0] < (layeredCard.position[0] + layeredCard.size[0])
+      const right = (card.position[0] + card.size[0]) > layeredCard.position[0]
+      const top = card.position[1] < (layeredCard.position[1] + layeredCard.size[1])
+      const bottom = (card.position[1] + card.size[1]) > layeredCard.position[1]
+      return left && right && top && bottom
+    }).length
   },
 
-  stackShuffle (e) {
-    e.preventDefault()
+  cardsWithZ () {
+    const { game } = this.state
 
-    const { modalForStackKey } = this.state
+    if (!game) {
+      return []
+    }
 
-    this.gameRef
-      .child("stacks")
-      .child(modalForStackKey)
-      .child("cards")
-      .set(_.shuffle(this.state.game.stacks[modalForStackKey].cards))
+    let layeredCards = []
 
-    this.setState({ modalForStackKey: null })
+    Object.keys(game.cards || {}).forEach((cardId) => {
+      const card = game.cards[cardId]
+
+      const zIndex = this.cardOverlapCount(layeredCards, card)
+
+      const nextCard = Object.assign({}, card, {
+        _id: cardId,
+        position: card.position.concat(zIndex + 1)
+      })
+
+      layeredCards.push(nextCard)
+    })
+
+    return layeredCards
   },
 
   render () {
     return (
       <div className="game">
+        <div className="game-board">
+          {this.renderCards()}
+        </div>
+        {/*
         <svg ref={(ele) => this.svg = ele} className="game-svg" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid meet" onMouseMove={this.mouseMove}>
           <rect x="0" y="0" width="1920" height="1080" fill="#076324" onDragOver={this.dragOverTable} onDrop={this.dropOntoTable} />
           {this.renderStacks()}
@@ -272,91 +320,50 @@ export default React.createClass({
         </svg>
 
         {this.renderGameTitle()}
+        */}
 
         <GameChat firebase={this.props.firebase} game={this.state.game} players={this.state.players} say={this.say} toggleGameText={this.toggleGameText} />
-        <div style={{ position: "absolute", left: "20px", bottom: "20px" }}>
-          {this.renderPlayers()}
+        <div className="game-player-list">
+          {/*this.renderPlayers()*/}
         </div>
-        {this.renderStackModal()}
         {this.renderEdit()}
-        {this.renderEditButton()}
       </div>
     )
   },
 
-  renderEditButton () {
-    if (!this.state.game) {
-      return
-    }
+  renderCards () {
+    const { firebase, gameId, currentUser } = this.props
 
-    if (this.state.game.ownerId == this.props.player.userId) {
-      const url = `/games/${this.props.gameId}/edit`
+    const cards = _.sortBy(this.cardsWithZ(), (card) => card.position[2])
+
+    console.log("Cards:", cards)
+
+    return cards.map((card) => {
       return (
-        <a href={url} className="white-text" style={{ position: "absolute", top: "20px", left: "20px" }}>
-          <i className="material-icons">edit</i>
-        </a>
+        <GameCard
+          key={card._id}
+          firebase={firebase}
+          gameId={gameId}
+          cardId={card._id}
+          card={card}
+          currentUser={currentUser}
+          interactive={false}
+          />
       )
-    } else {
-      return null
-    }
+    })
   },
 
   renderEdit () {
+    const { firebase, gameId } = this.props
     const { game } = this.state
 
-    if (!game || !this.props.editMode) {
-      return
-    }
-
-    return (
-      <div style={{ position: "absolute", left: "50%", width: "400px", marginLeft: "-200px", bottom: 0, backgroundColor: "white", padding: "10px" }}>
-        <h3>Game Configuration</h3>
-
-        <input type="text" placeholder="Name of your game" value={game.name || ""} onChange={this.gameNameChange} />
-        <textarea placeholder="Explain what game you are playing" value={game.description || ""} onChange={this.gameDescriptionChange} />
-
-        <hr />
-        <input type="checkbox" id="visible" checked={game.visible} onChange={this.gameVisibleChange} />
-        <label htmlFor="visible">Is this game visible?</label>
-
-        <br />
-
-        <a className="btn waves-effect waves-light" href={`/games/${this.props.gameId}`}>Done</a>
-
-      </div>
-    )
-  },
-
-  gameNameChange (e) {
-    this.gameRef.child("name").set(e.target.value)
-  },
-
-  gameDescriptionChange (e) {
-    this.gameRef.child("description").set(e.target.value)
-  },
-
-  gameVisibleChange (e) {
-    this.gameRef.child("visible").set(e.target.checked)
-  },
-
-  renderStackModal () {
-    const { game, modalForStackKey } = this.state
-
-    if (!game) {
-      return null
-    }
-
-    if (modalForStackKey) {
-      const stack = game.stacks[modalForStackKey]
+    if (game && this.props.editMode) {
       return (
-        <div style={{ position: "absolute", left: "50%", width: "400px", marginLeft: "-200px", bottom: 0, backgroundColor: "white", padding: "10px" }}>
-          <h4>Stack of {stack.cards.length} cards</h4>
-          <div className="collection">
-            <a href="#" className="collection-item" onClick={this.stackTakeFromTop}>Pick up a card</a>
-            <a href="#" className="collection-item" onClick={this.stackFlip}>Flip this stack</a>
-            <a href="#" className="collection-item" onClick={this.stackShuffle}>Shuffle</a>
-          </div>
-        </div>
+        <GameEdit
+          firebase={firebase}
+          gameId={gameId}
+          game={game}
+          />
       )
     } else {
       return null
@@ -383,72 +390,31 @@ export default React.createClass({
   },
 
   renderPlayers () {
-    const players = this.state.players || {}
-    const game = this.state.game || {}
-
-    return Object.keys(game.players || {}).map((playerKey) => {
-      const player = players.find((p) => p._id == playerKey)
-      if (player) {
-        return (
-          <div key={playerKey} data-player={playerKey}>
-            <div
-              style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundSize: "cover", backgroundImage: `url(${player.image})` }}
-              />
-            <div>
-              {this.renderPlayerCards(game.players[playerKey])}
-            </div>
-          </div>
-        )
-      } else {
-        return null
-      }
-    })
-  },
-
-  renderPlayerCards (gamePlayer) {
-    if (!this.state.game) {
-      return null
-    }
-
     const { game } = this.state
 
-    if (!game.players) {
+    if (!game) {
       return null
     }
 
-    const playerStackKey = _.findKey(game.stacks || {}, (gStack) => {
-      return gStack.ownedBy == gamePlayer.userId
+    return Object.keys(game.players || {}).map((playerKey) => {
+      const stackKey = _.findKey(game.stacks || {}, (s) => {
+        return s.ownedBy == playerKey
+      })
+
+      return (
+        <Player
+          key={playerKey}
+          player={game.players[playerKey]}
+          stack={game.stacks[stackKey]}
+          revealed={playerKey === this.props.currentUser.uid}
+          cards={game.cards}
+          dragStartFromHand={this.dragStartFromHand.bind(this, stackKey)}
+          dragEndFromHand={this.dragEndFromHand.bind(this, stackKey)}
+          />
+      )
     })
-
-    if (!playerStackKey) {
-      return
-    }
-
-    if (gamePlayer.userId == this.props.player.userId) {
-      return game.stacks[playerStackKey].cards.map((playerCard) => {
-        const card = game.cards[playerCard]
-
-        return (
-          <img
-            key={playerCard}
-            src={imageContext(`./cards/${card.suit}/${card.face}.png`)}
-            height="64"
-            width="auto"
-            onDragStart={this.dragStartFromHand.bind(this, playerStackKey, playerCard)}
-            onDragEnd={this.dragEndFromHand.bind(this, playerStackKey, playerCard)}
-            />
-        )
-      })
-    } else {
-      return game.stacks[playerStackKey].cards.map((playerCard) => {
-        const card = game.cards[playerCard]
-
-        return (
-          <img key={playerCard} src={imageContext(`./cards/Back/${deckIdxToName[card.deckIdx]}.png`)} height="64" width="auto" />
-        )
-      })
-    }
   },
+
 
   renderStacks () {
     const { game } = this.state
@@ -462,21 +428,23 @@ export default React.createClass({
     return Object.keys(stacks || {}).map((stackKey) => {
       const stack = stacks[stackKey]
       if (stack.ownedBy == false) {
-        const lastCard = game.cards[_.last(stack.cards)]
-        const imageHref = stack.faceUp ? imageContext(`./cards/${lastCard.suit}/${lastCard.face}.png`) : imageContext(`./cards/Back/${deckIdxToName[lastCard.deckIdx]}.png`)
+        //const lastCard = game.cards[_.last(stack.cards)]
+        const imageHref = "#" //stack.faceUp ? imageContext(`./cards/${lastCard.suit}/${lastCard.face}.png`) : imageContext(`./cards/Back/${deckIdxToName[lastCard.deckIdx]}.png`)
         const [x, y] = stack.position
 
         return (
           <image
             key={stackKey}
-            href={imageHref}
-            width={255*0.7}
-            height={380*0.7}
+            className="game-stack"
+            xlinkHref={imageHref}
+            width={CARD_WIDTH}
+            height={CARD_HEIGHT}
             x={x}
             y={y}
-            onClick={this.showStackOptionsFor.bind(this, stackKey)}
+            onDoubleClick={this.takeTopCard.bind(this, stackKey)}
             onDragOver={this.dragOverStack.bind(this, stackKey)}
             onDrop={this.dropOntoStack.bind(this, stackKey)}
+            onMouseDown={this.beginMoveStack.bind(this, stackKey)}
             />
         )
 
@@ -487,27 +455,33 @@ export default React.createClass({
   },
 
   renderCursors () {
-    const { player } = this.props
+    const game = this.state.game
 
-    const players = this.state.players || {}
-    const game = this.state.game || {}
+    if (!game) {
+      return null
+    }
 
     return Object.keys(game.players || {}).map((playerKey) => {
-      if (!players[playerKey] || player.userId == playerKey) {
-        return null
-      }
+      const player = game.players[playerKey]
+      if (player) {
+        let position = {
+          x: player.position[0] - 28,
+          y: player.position[1] + 5
+        }
 
-      const cursorPlayer = game.players[playerKey]
-      if (cursorPlayer.position) {
-        const [x, y] = cursorPlayer.position
-
-        const name = playerKey == player.userId ? "You" : players[playerKey].name
+        position.x = Math.min(1920, Math.max(0, position.x))
+        position.y = Math.min(1080, Math.max(0, position.y))
 
         return (
-          <g key={playerKey} style={{ zIndex: playerKey == player.userId ? 999 : undefined }}>
-            <text x={x} y={y - 10} textAnchor="start" style={{ transition: "all 0.1s ease" }}>{name}</text>
-            <image href={imageContext("./cursor.png")} x={x - 28} y={y} width={64} height={101} style={{ transition: "all 0.05s ease" }} />
-          </g>
+          <image
+            key={playerKey}
+            //href={imageContext("./cursor.png")}
+            x={position.x}
+            y={position.y}
+            width={64}
+            height={101}
+            style={{ transition: "all 0.05s ease", pointerEvents: "none" }}
+            />
         )
       } else {
         return null

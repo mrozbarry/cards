@@ -1,0 +1,26 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": "auth != null",
+    "accounts": {
+      "$uid": {
+        ".indexOn": ["state", "lastPingAt"]
+      }
+    },
+    "games": {
+      "$gameId": {
+        ".indexOn": ["ownerId", "visible"],
+        "players": {
+          "$uid": {
+            "position": {
+              ".validate": "newData.hasChildren(['0', '1'])"
+            },
+            "cursor": {
+              ".validate": "!newData || newData.isString()"
+            }
+          }
+        }
+      }
+    }
+  }
+}

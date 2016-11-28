@@ -1,0 +1,35 @@
+.player {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: flex-end;
+  justify-content: flex-start;
+  width: auto;
+}
+
+.player-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-size: cover;
+  align-self: flex-start;
+}
+
+.player-cards {
+  width: 60%;
+  display: flex;
+  flex-flow: row wrap;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+.player-card {
+  height: 64px;
+  width: auto;
+  margin: 5px;
+  margin-right: -20px;
+  transition: margin-right 0.5s ease-in-out;
+}
+
+.player:hover .player-card {
+  margin-right: 5px;
+}

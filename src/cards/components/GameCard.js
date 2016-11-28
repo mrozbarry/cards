@@ -1,69 +1,47 @@
+/*
+ * TODO:
+ * An item can:
+ * - Be dragged within the game container
+ * - Be dropped within the game container
+ * - Be held in your hand
+ * - Be dragged out of hand
+ */
 import React from "react"
 
-const { object } = React.PropTypes
+const { object, string, bool } = React.PropTypes
 
 export default React.createClass({
-  displayName: "GamesCard",
+  displayName: "GameCard",
 
   propTypes: {
     firebase: object.isRequired,
-    game: object.isRequired,
-    player: object.isRequired
+    gameId: string.isRequired,
+    cardId: string.isRequired,
+    card: object,
+    currentUser: object.isRequired,
+    interactive: bool.isRequired
   },
 
-  deleteGame (e) {
-    const { firebase, game } = this.props
-
-    e.preventDefault()
-
-    firebase.database().ref("games").child(game._id).remove()
+  style () {
+    const { card } = this.props
+    const extra = card.position[2] / 10
+    return {
+      position: "absolute",
+      left: (card.position[0] + extra) + "px",
+      top: (card.position[1] + extra) + "px",
+      width: card.size[0] + "px",
+      height: card.size[1] + "px",
+      border: "1px black solid",
+      borderRadius: "5px",
+      backgroundColor: card.colour
+    }
   },
 
   render () {
-    const { game } = this.props
-
-    const numberOfPlayers = game.players ? Object.keys(game.players || {}).length : 0
-
     return (
-      <div className="card teal darken-2">
-        <div className="card-content white-text" style={{ height: "300px"}}>
-          <h3>{game.name}</h3>
-          <div>
-            {numberOfPlayers} / {game.maxPlayers}
-          </div>
-          <div>
-            {game.description}
-          </div>
-        </div>
-        {this.renderGameActions(game)}
-      </div>
+      <div
+        style={this.style()}
+        />
     )
-  },
-
-  renderGameActions (game) {
-    const numberOfPlayers = game.players ? Object.keys(game.players || {}).length : 0
-    if (numberOfPlayers < game.maxPlayers) {
-      const { player } = this.props
-      const gameUrl = `/games/${game._id}`
-
-      let anchors = [
-        <a key="join" href={gameUrl}>Join Game</a>
-      ]
-
-      if (player && game.ownerId === player.userId) {
-        anchors.push(
-          <a key="delete" href="#" onClick={this.deleteGame}>Delete Game</a>
-        )
-      }
-
-      return (
-        <div className="card-action">
-          {anchors}
-        </div>
-      )
-    } else {
-      return null
-    }
   }
 })
-

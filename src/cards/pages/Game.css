@@ -12,6 +12,11 @@
   background-color: black;
 }
 
+.game-board {
+  width: 2048px;
+  height: 2048px;
+}
+
 .game-text {
   position: absolute;
   top: 0px;
@@ -20,4 +25,24 @@
   background-color: rgba(0, 0, 0, 0.7);
   color: white;
   pointer-events: none;
+}
+
+.game-stack {
+  stroke-width: 5;
+  stroken: transparent;
+}
+
+.game-stack:hover {
+  stroken: red;
+}
+
+.game-player-list {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: flex-start;
+  justify-content: flex-start;
 }

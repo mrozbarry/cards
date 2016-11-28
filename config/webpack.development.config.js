@@ -30,11 +30,6 @@ module.exports = {
         test: /\.css$/,
         include: path.resolve(ROOT_PATH, "src"),
         loaders: ["style", "css"]
-      },
-      {
-        test: /\.png/,
-        include: path.resolve(ROOT_PATH, "src"),
-        loaders: ["file"]
       }
     ]
   },

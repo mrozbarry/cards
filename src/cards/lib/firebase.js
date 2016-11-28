@@ -1,15 +1,10 @@
-export const development = {
-  apiKey: "AIzaSyDe3NDxBOqLqoPs9VXC0YdTWWOtzdt3-9E",
-  authDomain: "nodeknockout-cards.firebaseapp.com",
-  databaseURL: "https://nodeknockout-cards.firebaseio.com",
-  storageBucket: "nodeknockout-cards.appspot.com",
-  messagingSenderId: "670999733708"
+const default_config = {
+  apiKey: "AIzaSyC9HuNgFIn9Fw85XzzUAEVcrCn0XARLZS4",
+  authDomain: "cards-323a7.firebaseapp.com",
+  databaseURL: "https://cards-323a7.firebaseio.com",
+  storageBucket: "cards-323a7.appspot.com",
+  messagingSenderId: "791092949978"
 }
+export const development = default_config
 
-export const production = {
-  apiKey: "AIzaSyDe3NDxBOqLqoPs9VXC0YdTWWOtzdt3-9E",
-  authDomain: "nodeknockout-cards.firebaseapp.com",
-  databaseURL: "https://nodeknockout-cards.firebaseio.com",
-  storageBucket: "nodeknockout-cards.appspot.com",
-  messagingSenderId: "670999733708"
-}
+export const production = default_config
