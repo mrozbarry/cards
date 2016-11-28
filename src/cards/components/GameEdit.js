@@ -50,7 +50,7 @@ export default React.createClass({
         Game.addCard(
           firebase,
           gameId,
-          Card.build([Math.random() * 1948, Math.random() * 1918], 0)
+          Card.build([Math.random() * 1948, Math.random() * 1918], Math.random() * 359)
         )
       })
     } else if (delta < 0) {

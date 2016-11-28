@@ -25,15 +25,18 @@ export default React.createClass({
   style () {
     const { card } = this.props
     const extra = card.position[2] / 10
+    const shadowBlur = card.position[2] * 5
     return {
       position: "absolute",
       left: (card.position[0] + extra) + "px",
       top: (card.position[1] + extra) + "px",
       width: card.size[0] + "px",
       height: card.size[1] + "px",
-      border: "1px black solid",
       borderRadius: "5px",
-      backgroundColor: card.colour
+      backgroundColor: card.colour,
+      transformOrigin: "50% 50%",
+      transform: `rotate(${card.angle}deg)`,
+      boxShadow: `0 0 ${shadowBlur}px 0 black`
     }
   },
 
