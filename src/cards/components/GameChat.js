@@ -6,18 +6,18 @@ import GameChatMessage from "components/GameChatMessage"
 
 import _ from "lodash"
 
-const { object, func, array } = React.PropTypes
+const { object, bool, func } = React.PropTypes
 
 export default React.createClass({
   displayName: "GameChat",
 
   propTypes: {
     firebase: object.isRequired,
+    interactive: bool.isRequired,
     say: func.isRequired,
-    toggleGameText: func.isRequired,
-    game: object,
-    players: array
+    messages: object
   },
+
 
   getInitialState () {
     return {
@@ -28,14 +28,10 @@ export default React.createClass({
     }
   },
 
-  // shouldComponentUpdate (nextProps, nextState) {
-  //   return !_.matches(nextState)(this.state) ||
-  //     Object.keys(nextProps.game.messages || {}).length != Object.keys(this.props.game.messages || {}).length
-  // },
 
   componentWillReceiveProps (nextProps) {
     const { lastMessageKey, isOpen } = this.state
-    const { messages } = nextProps.game || {}
+    const { messages } = nextProps || {}
 
     const keys = Object.keys(messages || {})
 
@@ -45,24 +41,29 @@ export default React.createClass({
     }
   },
 
+
   componentDidUpdate (prevProps) {
-    if (this.state.isOpen && Object.keys(prevProps.game.messages || {}).length < Object.keys(this.props.game.messages || {}).length) {
+    const prevMessageCount = Object.keys(prevProps.messages || {}).length
+    const currentMessageCount = Object.keys(this.props.messages || {}).length
+
+    if (this.state.isOpen && prevMessageCount < currentMessageCount) {
       this.scrollMessagesToBottom()
     }
   },
 
+
   toggleChat (open) {
     this.setState({
       isOpen: open,
-      lastMessageKey: _.last(Object.keys(this.props.game.messages || {})),
+      lastMessageKey: _.last(Object.keys(this.props.messages || {})),
       unreadCount: 0
     }, () => {
-      this.props.toggleGameText(open)
       if (open) {
         this.scrollMessagesToBottom()
       }
     })
   },
+
 
   openChat (e) {
     e.preventDefault()
@@ -70,11 +71,13 @@ export default React.createClass({
     this.toggleChat(true)
   },
 
+
   closeChat (e) {
     e.preventDefault()
 
     this.toggleChat(false)
   },
+
 
   getUnreadCount () {
     const { unreadCount } = this.state
@@ -85,11 +88,13 @@ export default React.createClass({
     }
   },
 
+
   messageChange (e) {
     this.setState({
       message: e.target.value
     })
   },
+
 
   messageKeyUp (e) {
     if (e.which === 13) {
@@ -102,9 +107,11 @@ export default React.createClass({
     }
   },
 
+
   scrollMessagesToBottom () {
     this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight
   },
+
 
   render () {
     if (this.state.isOpen) {
@@ -114,6 +121,7 @@ export default React.createClass({
     }
   },
 
+
   renderIcon () {
     return (
       <a href="#" className="game-chat game-chat--icon btn-floating btn-large waves-effect waves-light red darken-4" onClick={this.openChat}>
@@ -122,15 +130,14 @@ export default React.createClass({
     )
   },
 
+
   renderMessages () {
     return (
       <div className="game-chat game-chat--full">
         <div ref={(ele) => this.messagesDiv = ele} className="game-chat__messages">
           {this.renderMessageList()}
         </div>
-        <div className="game-chat__you" style={{ backgroundColor: "white", padding: "10px", paddingBottom: 0 }}>
-          <input type="text" placeholder="Say something" onChange={this.messageChange} onKeyUp={this.messageKeyUp} value={this.state.message} />
-        </div>
+        {this.renderInput()}
         <a href="#" onClick={this.closeChat} className="game-chat__close btn waves-effect waves-light red darken-4">
           <i className="material-icons">keyboard_arrow_down</i>
         </a>
@@ -138,19 +145,48 @@ export default React.createClass({
     )
   },
 
+
+  renderInput () {
+    if (this.props.interactive) {
+      return (
+        <div className="game-chat__you">
+          <input
+            type="text"
+            placeholder="Say something"
+            onChange={this.messageChange}
+            onKeyUp={this.messageKeyUp}
+            value={this.state.message}
+            />
+        </div>
+      )
+    } else {
+      return null
+    }
+  },
+
+
   renderMessageList () {
-    const { players, game } = this.props
-    const { messages } = game
+    const { firebase, messages } = this.props
 
-    return Object.keys(messages || {}).map((messageKey) => {
-      const message = messages[messageKey]
-      const player = players.find((p) => p._id == message.userId) //[message.userId]
+    const messageKeys = Object.keys(messages)
 
-      if (player) {
-        return <GameChatMessage key={messageKey} message={message} player={player} />
-      } else {
-        return null
-      }
-    })
+    if (messageKeys.length > 0) {
+      return messageKeys.map((messageKey) => {
+        const message = messages[messageKey]
+        return (
+          <GameChatMessage
+            key={messageKey}
+            message={message}
+            firebase={firebase}
+            />
+        )
+      })
+    } else {
+      return (
+        <div style={{ textAlign: "center", padding: "10px" }}>
+          Nobody has said anything yet.
+        </div>
+      )
+    }
   }
 })

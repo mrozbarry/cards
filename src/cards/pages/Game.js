@@ -5,21 +5,12 @@ import React from "react"
 import GameCard from "components/GameCard"
 import GameChat from "components/GameChat"
 import GameEdit from "components/GameEdit"
-import Player from "components/Player"
-
-import PlayersMixin from "mixins/PlayersMixin"
 
 import { navigate } from "react-mini-router"
 
 import _ from "lodash"
 
 const { func, object, string, bool } = React.PropTypes
-
-// const imageContext = require.context("assets/", true, /\.png$/)
-
-const CARD_SCALE = 0.7
-const CARD_WIDTH = 255 * CARD_SCALE
-const CARD_HEIGHT = 380 * CARD_SCALE
 
 export default React.createClass({
   displayName: "Game",
@@ -33,46 +24,251 @@ export default React.createClass({
     editMode: bool
   },
 
-  mixins: [
-    PlayersMixin
-  ],
-
   getInitialState () {
     return {
       game: null,
-      gameTextShow: false,
-      heldStackKey: null
+      hand: null,
+      select: null
     }
   },
 
-  componentWillMount () {
+
+  setHandCard (cardId, mousePosition) {
+    const { game } = this.state
+
+    const center = {
+      x: game.cards[cardId].position[0],
+      y: game.cards[cardId].position[1]
+    }
+
+    const mouseAngle = (
+      Math.atan2(center.y - mousePosition.y, center.x - mousePosition.x) * 180 / Math.PI
+    )
+
+    const distX = center.x - mousePosition.x
+    const distY = center.y - mousePosition.y
+
+    this.setState({
+      hand: {
+        cardId: cardId,
+        lastMouseAngle: mouseAngle,
+        distance: Math.sqrt((distX * distX) + (distY * distY))
+      }
+    }, () => {
+      this
+        .gameRef
+        .child("cards")
+        .child(cardId)
+        .child("position")
+        .child("2")
+        .set(Object.keys(game.cards || {}).length)
+    })
+  },
+
+
+  getSelectPositionAndSize (p2) {
+    const { select } = this.state
+
+    if (!select) {
+      return {
+        position: [0, 0],
+        size: [0, 0]
+      }
+    }
+
+    p2 = p2 || select.p2
+
+    return {
+      position: [
+        Math.min(select.p1[0], p2[0]),
+        Math.min(select.p1[1], p2[1]),
+      ],
+
+      size: [
+        Math.abs(select.p1[0] - p2[0]),
+        Math.abs(select.p1[1] - p2[1])
+      ]
+    }
+  },
+
+
+  beginSelect (x, y) {
+    this.setState({
+      select: {
+        p1: [x, y],
+        p2: [x, y],
+        cards: []
+      }
+    })
+  },
+
+
+  resizeSelect (x, y) {
+    const { select } = this.state
+
+    const { position, size } = this.getSelectPositionAndSize([x, y])
+
+    this.setState({
+      select: {
+        p1: select.p1,
+        p2: [x, y],
+        cards: this.getOverlappingCardsOf(null, position, size)
+      }
+    })
+  },
+
+
+  updateSelectCards () {
+    const { select } = this.state
+
+    const { position, size } = this.getSelectPositionAndSize(select.p2)
+
+    this.setState({
+      select: Object.assign({}, select, {
+        cards: this.getOverlappingCardsOf(null, position, size)
+      })
+    })
+  },
+
+
+  completeSelect (x, y) {
+    const { position, size } = this.getSelectPositionAndSize([x, y])
+
+    this.setState({
+      select: {
+        p1: [0, 0],
+        p2: [0, 0],
+        cards: this.getOverlappingCardsOf(null, position, size)
+      }
+    })
+  },
+
+
+  clearSelect () {
+    this.setState({ select: null })
+  },
+
+
+  handleMouseDown (e) {
+    if (e.shiftKey) {
+      e.preventDefault()
+      console.log("begin select", e.pageX, e.pageY)
+    }
+  },
+
+
+  handleMouseMove (e) {
+    const { game, hand } = this.state
+
+    if (e.buttons == 0) {
+      this.releaseHandCard()
+      return
+    } else if (e.shiftKey && !hand) {
+      // TODO: Update select rect
+
+    } else if (hand) {
+      const card = game.cards[hand.cardId]
+
+      const p1 = { x: e.pageX, y: e.pageY }
+      const p2 = {
+        x: card.position[0],
+        y: card.position[1]
+      }
+
+      const mouseAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI
+
+      const distX = p2.x - p1.x
+      const distY = p2.y - p1.y
+
+      const distance = Math.sqrt((distX * distX) + (distY * distY))
+      const travelDistance = hand.distance - distance
+
+      const nextPosition = [
+        card.position[0] + (Math.cos((mouseAngle * Math.PI) / 180) * travelDistance),
+        card.position[1] + (Math.sin((mouseAngle * Math.PI) / 180) * travelDistance),
+        Object.keys(game.cards || {}).length + 1
+      ].map((axis) => {
+        return Math.min(Math.max(0, axis), 2048)
+      })
+
+      this.setState({
+        hand: Object.assign({}, hand, {
+          lastMouseAngle: mouseAngle
+        })
+      }, () => {
+        this
+          .gameRef
+          .child("cards")
+          .child(hand.cardId)
+          .update({
+            angle: (card.angle + (mouseAngle - hand.lastMouseAngle)),
+            position: nextPosition
+          })
+      })
+
+    }
+  },
+
+
+  releaseHandCard () {
+    if (this.state.hand == null) {
+      return
+    }
+
+    const { game } = this.state
+    const { cardId } = this.state.hand
+
+    this.setState({
+      hand: null
+    }, () => {
+      this
+        .gameRef
+        .child("cards")
+        .child(cardId)
+        .update({
+          angle: (game.cards[cardId].angle % 360)
+        }).then(() => {
+          this.normalizeCardZ(cardId, game.cards[cardId])
+        })
+    })
+  },
+
+
+  normalizeCardZ (cardId, card) {
+    const overlapping = this.getOverlappingCardsOf(cardId, card.position, card.size)
+
+    overlapping.forEach((overlappingCard, idx) => {
+      this.gameRef.child("cards").child(overlappingCard._id).child("position").child("2").set(idx)
+    })
+
+    this.gameRef.child("cards").child(cardId).child("position").child("2").set(overlapping.length)
+  },
+
+
+  componentDidMount () {
     const { firebase, gameId } = this.props
+
+    this.storageUrls = {}
 
     this.gameRef = firebase.database().ref("games").child(gameId)
     this.gameRef.on("value", this.gameValueChange)
 
-    // this.playerRef = this.gameRef.child("players").child(currentUser.uid)
-    //
-    // this.playerRef.set({
-    //   userId: currentUser.uid,
-    //   position: [0, 0]
-    // })
-
-    //document.addEventListener("mouseup", this.endMoveStack)
-
-    // this.submitMousePosition = (position) => {
-    //   this.playerRef.update({
-    //     position: [position.x, position.y]
-    //   })
-    // }
-
     this.props.setCurrentGameKey(this.props.gameId)
+
+    document.addEventListener("mousedown", this.handleMouseDown)
+    document.addEventListener("mouseup", this.handleMouseUp)
+    this.boardRef.addEventListener("mousemove", this.handleMouseMove)
   },
 
+
   componentWillUnmount () {
+    document.removeEventListener("mousedown", this.handleMouseDown)
+    document.removeEventListener("mouseup", this.handleMouseUp)
+    this.boardRef.removeEventListener("mousemove", this.handleMouseMove)
     this.gameRef.off("value", this.gameValueChange)
     this.props.setCurrentGameKey(null)
   },
+
 
   gameValueChange (snapshot) {
     const game = snapshot.val()
@@ -87,258 +283,128 @@ export default React.createClass({
     }
   },
 
-  toggleGameText (show) {
-    this.setState({
-      gameTextShow: show
-    })
-  },
 
-  clientToSvgCoord ({ clientX, clientY }) {
-    let point = this.svg.createSVGPoint()
-    point.x = clientX
-    point.y = clientY
-    return point.matrixTransform(this.svg.getScreenCTM().inverse())
-  },
-
-  mouseMove (e) {
-    this.moveHeldStackKey(e)
-    //this.submitMousePosition(this.clientToSvgCoord(e))
-  },
-
-  moveHeldStackKey (e) {
-    const { heldStackKey } = this.state
-
-    if (heldStackKey) {
-      let nextPosition = this.clientToSvgCoord(e)
-      nextPosition.x = Math.max(0, nextPosition.x)
-      nextPosition.x = Math.min(1920 - CARD_WIDTH, nextPosition.x)
-      nextPosition.y = Math.max(0, nextPosition.y)
-      nextPosition.y = Math.min(1080 - CARD_HEIGHT, nextPosition.y)
-
-      this
-        .gameRef
-        .child("stacks")
-        .child(heldStackKey)
-        .child("position")
-        .set([nextPosition.x, nextPosition.y])
+  getStorageUrl (file, callback) {
+    const url = this.storageUrls[file]
+    if (url != undefined) {
+      if (url === "") {
+        setTimeout(() => {
+          this.getStorageUrl(file, callback)
+        }, 10)
+      } else {
+        callback(url)
+      }
+    } else {
+      this.storageUrls[file] = ""
+      this.props.firebase.storage().ref().child(file).getDownloadURL().then((url) => {
+        this.storageUrls[file] = url
+        callback(url)
+      })
     }
   },
+
+
+  handleMouseUp () {
+    this.releaseHandCard()
+  },
+
 
   say (message) {
     const { currentUser } = this.props
 
     this.gameRef.child("messages").push({
-      userId: currentUser.uid,
+      accountId: currentUser.uid,
       type: "say",
       message: message,
       createdAt: Date.now()
     })
   },
 
-  takeTopCard (stackKey, e) {
-    if (e) {
-      e.preventDefault()
-    }
-    this.stackTakeFromTop(stackKey)
-  },
 
-  dragStartFromHand (stackKey, cardKey, e) {
-    e.dataTransfer.setData("text", JSON.stringify({
-      stackKey: stackKey,
-      cardKey: cardKey
-    }))
-  },
-
-  dragEndFromHand (stackKey, cardKey, e) {
-    if (e.dataTransfer.dropEffect == "none") {
-      e.preventDefault()
-      return
-    }
-
-    const nextStackCards = this.state.game.stacks[stackKey].cards.filter((ck) => ck != cardKey)
-    if (nextStackCards.length > 0) {
-      this.gameRef.child("stacks").child(stackKey).child("cards").set(nextStackCards)
-    } else {
-      this.gameRef.child("stacks").child(stackKey).remove()
-    }
-  },
-
-  // ------------
-
-  dragOverTable (e) {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = "move"
-  },
-
-  dropOntoTable (e) {
-    const source = JSON.parse(e.dataTransfer.getData("text"))
-    const svgPosition = this.clientToSvgCoord(e)
-    if (source.cardKey) {
-      const ref = this.gameRef.child("stacks").push()
-      ref.set({
-        _id: ref.key,
-        position: [svgPosition.x, svgPosition.y],
-        cards: [source.cardKey],
-        ownedBy: false,
-        faceUp: false
-      })
-    } else {
-      this.gameRef
-        .child("stacks")
-        .child(source.stackKey)
-        .child("position")
-        .set([svgPosition.x, svgPosition.y])
-    }
-  },
-
-  // ------------
-
-  dragOverStack (stackKey, e) {
-    if (e.preventDefault) {
-      e.preventDefault()
-    }
-    e.dataTransfer.dropEffect = "move"
-  },
-
-  dropOntoStack (destStackKey, e) {
-    const source = JSON.parse(e.dataTransfer.getData("text"))
-    if (source.cardKey) {
-      const nextStackCards = this.state.game.stacks[destStackKey].cards.concat(source.cardKey)
-      this.gameRef.child("stacks").child(destStackKey).child("cards").set(nextStackCards)
-    } else {
-      const sourceCards = this.state.game.stacks[source.stackKey].cards
-      const nextStackCards = this.state.game.stacks[destStackKey].cards.concat(sourceCards)
-      this.gameRef.child("stacks").child(destStackKey).child("cards").set(nextStackCards)
-    }
-  },
-
-  // ------------
-
-  beginMoveStack (stackKey, e) {
-    if (e.button != 0) {
-      return
-    }
-
-    e.preventDefault()
-    console.log("beginMoveStack", stackKey)
-    this.setState({
-      heldStackKey: stackKey
-    })
-  },
-
-  endMoveStack (e) {
-    console.log("mouseUp")
-    const { heldStackKey } = this.state
-    if (heldStackKey) {
-      e.preventDefault()
-      this.setState({
-        heldStackKey: null
-      })
-    }
-  },
-
-  // ------------
-
-  stackTakeFromTop (stackKey) {
-    const { currentUser } = this.props
+  flipCard (cardId) {
     const { game } = this.state
-    const stack = game.stacks[stackKey]
-    const nextStackCards = stack.cards.slice(0, -1)
-    const myCard = _.last(game.stacks[stackKey].cards)
 
-    if (nextStackCards.length > 0) {
-      this.gameRef.child("stacks").child(stackKey).child("cards").set(nextStackCards)
-    } else {
-      this.gameRef.child("stacks").child(stackKey).remove()
-    }
+    return this
+      .gameRef
+      .child("cards")
+      .child(cardId)
+      .update({ faceUp: !game.cards[cardId].faceUp })
+      .then(() => {
+        this.releaseHandCard()
+      })
+  },
 
-    const myStackKey = _.findKey(game.stacks, (gStack) => {
-      return gStack.ownedBy == currentUser.uid
+
+  getOverlappingCardsOf (cardId, position, size) {
+    const cards = this.cards()
+
+    const overlapping = cards.filter((layeredCard) => {
+      if (layeredCard._id == cardId) {
+        return false
+      }
+
+      const left = position[0] < (layeredCard.position[0] + layeredCard.size[0])
+      const right = (position[0] + size[0]) > layeredCard.position[0]
+      const top = position[1] < (layeredCard.position[1] + layeredCard.size[1])
+      const bottom = (position[1] + size[1]) > layeredCard.position[1]
+
+      return left && right && top && bottom
     })
 
-    if (myStackKey) {
-      const myNextCards = game.stacks[myStackKey].cards.concat(myCard)
-      this.gameRef.child("stacks").child(myStackKey).child("cards").set(myNextCards)
-    } else {
-      const ref = this.gameRef.child("stacks").push()
-      ref.set({
-        _id: ref.key,
-        position: [0, 0],
-        cards: [myCard],
-        ownedBy: currentUser.uid,
-        faceUp: false
-      })
-    }
+    return _.sortBy(overlapping, (c) => { return c.position[2] })
   },
 
-  cardOverlapCount (layeredCards, card) {
-    return layeredCards.filter((layeredCard) => {
-      const left = card.position[0] < (layeredCard.position[0] + layeredCard.size[0])
-      const right = (card.position[0] + card.size[0]) > layeredCard.position[0]
-      const top = card.position[1] < (layeredCard.position[1] + layeredCard.size[1])
-      const bottom = (card.position[1] + card.size[1]) > layeredCard.position[1]
-      return left && right && top && bottom
-    }).length
-  },
 
-  cardsWithZ () {
+  cards () {
     const { game } = this.state
 
     if (!game) {
       return []
     }
 
-    let layeredCards = []
-
-    Object.keys(game.cards || {}).forEach((cardId) => {
-      const card = game.cards[cardId]
-
-      const zIndex = this.cardOverlapCount(layeredCards, card)
-
-      const nextCard = Object.assign({}, card, {
-        _id: cardId,
-        position: card.position.concat(zIndex + 1)
+    const cardsArray = Object.keys(game.cards || {}).map((cardId) => {
+      return Object.assign({}, game.cards[cardId], {
+        _id: cardId
       })
-
-      layeredCards.push(nextCard)
     })
 
-    return layeredCards
+    return _.sortBy(cardsArray, (card) => { return (card.position[2] || 0) })
   },
 
+
   render () {
+    const { game } = this.state
+    const { currentUser } = this.props
+    const interactive = !!(currentUser && game && game.players && game.players[currentUser.uid])
+
+    const messages = (game ? game.messages : null) || {}
+
     return (
       <div className="game">
-        <div className="game-board">
-          {this.renderCards()}
+        <div ref={(ele) => this.boardRef = ele} className="game-board">
+          {this.renderCards(interactive)}
         </div>
-        {/*
-        <svg ref={(ele) => this.svg = ele} className="game-svg" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid meet" onMouseMove={this.mouseMove}>
-          <rect x="0" y="0" width="1920" height="1080" fill="#076324" onDragOver={this.dragOverTable} onDrop={this.dropOntoTable} />
-          {this.renderStacks()}
-          {this.renderCursors()}
-        </svg>
 
-        {this.renderGameTitle()}
-        */}
-
-        <GameChat firebase={this.props.firebase} game={this.state.game} players={this.state.players} say={this.say} toggleGameText={this.toggleGameText} />
-        <div className="game-player-list">
-          {/*this.renderPlayers()*/}
-        </div>
+        <GameChat
+          firebase={this.props.firebase}
+          messages={messages}
+          say={this.say}
+          interactive={interactive}
+          />
         {this.renderEdit()}
       </div>
     )
   },
 
-  renderCards () {
+
+  renderCards (interactive) {
+    const { hand } = this.state
     const { firebase, gameId, currentUser } = this.props
 
-    const cards = _.sortBy(this.cardsWithZ(), (card) => card.position[2])
-
-    console.log("Cards:", cards)
+    const cards = this.cards()
 
     return cards.map((card) => {
+      const isHandCard = hand ? (hand.cardId == card._id) : false
       return (
         <GameCard
           key={card._id}
@@ -347,11 +413,16 @@ export default React.createClass({
           cardId={card._id}
           card={card}
           currentUser={currentUser}
-          interactive={false}
+          interactive={interactive}
+          getStorageUrl={this.getStorageUrl}
+          setHandCard={this.setHandCard}
+          isHandCard={isHandCard}
+          flipCard={this.flipCard}
           />
       )
     })
   },
+
 
   renderEdit () {
     const { firebase, gameId } = this.props
@@ -368,124 +439,5 @@ export default React.createClass({
     } else {
       return null
     }
-  },
-
-  renderGameTitle () {
-    const { game, gameTextShow } = this.state
-
-    if (!game) {
-      return null
-    }
-
-    if (gameTextShow || this.props.editMode) {
-      return (
-        <div className="game-text">
-          <h2>{game.name}</h2>
-          <div>{game.description}</div>
-        </div>
-      )
-    } else {
-      return null
-    }
-  },
-
-  renderPlayers () {
-    const { game } = this.state
-
-    if (!game) {
-      return null
-    }
-
-    return Object.keys(game.players || {}).map((playerKey) => {
-      const stackKey = _.findKey(game.stacks || {}, (s) => {
-        return s.ownedBy == playerKey
-      })
-
-      return (
-        <Player
-          key={playerKey}
-          player={game.players[playerKey]}
-          stack={game.stacks[stackKey]}
-          revealed={playerKey === this.props.currentUser.uid}
-          cards={game.cards}
-          dragStartFromHand={this.dragStartFromHand.bind(this, stackKey)}
-          dragEndFromHand={this.dragEndFromHand.bind(this, stackKey)}
-          />
-      )
-    })
-  },
-
-
-  renderStacks () {
-    const { game } = this.state
-
-    if (!game) {
-      return
-    }
-
-    const { stacks } = game
-
-    return Object.keys(stacks || {}).map((stackKey) => {
-      const stack = stacks[stackKey]
-      if (stack.ownedBy == false) {
-        //const lastCard = game.cards[_.last(stack.cards)]
-        const imageHref = "#" //stack.faceUp ? imageContext(`./cards/${lastCard.suit}/${lastCard.face}.png`) : imageContext(`./cards/Back/${deckIdxToName[lastCard.deckIdx]}.png`)
-        const [x, y] = stack.position
-
-        return (
-          <image
-            key={stackKey}
-            className="game-stack"
-            xlinkHref={imageHref}
-            width={CARD_WIDTH}
-            height={CARD_HEIGHT}
-            x={x}
-            y={y}
-            onDoubleClick={this.takeTopCard.bind(this, stackKey)}
-            onDragOver={this.dragOverStack.bind(this, stackKey)}
-            onDrop={this.dropOntoStack.bind(this, stackKey)}
-            onMouseDown={this.beginMoveStack.bind(this, stackKey)}
-            />
-        )
-
-      } else {
-        return null
-      }
-    })
-  },
-
-  renderCursors () {
-    const game = this.state.game
-
-    if (!game) {
-      return null
-    }
-
-    return Object.keys(game.players || {}).map((playerKey) => {
-      const player = game.players[playerKey]
-      if (player) {
-        let position = {
-          x: player.position[0] - 28,
-          y: player.position[1] + 5
-        }
-
-        position.x = Math.min(1920, Math.max(0, position.x))
-        position.y = Math.min(1080, Math.max(0, position.y))
-
-        return (
-          <image
-            key={playerKey}
-            //href={imageContext("./cursor.png")}
-            x={position.x}
-            y={position.y}
-            width={64}
-            height={101}
-            style={{ transition: "all 0.05s ease", pointerEvents: "none" }}
-            />
-        )
-      } else {
-        return null
-      }
-    })
   }
 })

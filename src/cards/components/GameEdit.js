@@ -3,6 +3,8 @@ import React from "react"
 import * as Game from "lib/game"
 import * as Card from "lib/card"
 
+import _ from "lodash"
+
 const { object, string } = React.PropTypes
 
 export default React.createClass({
@@ -13,6 +15,31 @@ export default React.createClass({
     game: object.isRequired,
     gameId: string.isRequired
   },
+
+
+  getInitialState () {
+    return {
+      deck: null
+    }
+  },
+
+
+  componentDidMount () {
+    this.deckRef = this.props.firebase.database().ref("decks").child("kennynl")
+    this.deckRef.on("value", this.handleDeckValue)
+  },
+
+
+  componentWillUnmount () {
+    this.deckRef.off("value", this.handleDeckValue)
+  },
+
+
+  handleDeckValue (snapshot) {
+    const deck = snapshot.val()
+    this.setState({ deck: deck })
+  },
+
 
   gameNameChange (e) {
     const { firebase, gameId } = this.props
@@ -43,14 +70,26 @@ export default React.createClass({
 
     const delta = e.target.value - this.numberOfCards()
 
-    console.log("gameCardsChange", this.numberOfCards(), delta)
-
     if (delta > 0) {
+      const { deck } = this.state
       Array.from(" ".repeat(delta)).forEach(() => {
+        const backId = Object.keys(deck.backs)[0]
+        const back = deck.backs[backId]
+
+        const faceId = _.sample(Object.keys(deck.faces))
+        const face = deck.faces[faceId]
+
         Game.addCard(
           firebase,
           gameId,
-          Card.build([Math.random() * 1948, Math.random() * 1918], Math.random() * 359)
+          Card.build({
+            face: face,
+            back: back,
+            size: deck.size,
+            position: [(Math.random() * 1900) + 10, (Math.random() * 1060) + 10, Object.keys(game.cards || {}).length],
+            angle: Math.random() * 359,
+            faceUp: (Math.random() * 30 > 15)
+          })
         )
       })
     } else if (delta < 0) {
@@ -60,6 +99,37 @@ export default React.createClass({
       })
     }
   },
+
+  // gameAddDeck (e) {
+  //   const { firebase, gameId, game } = this.props
+  //
+  //   e.preventDefault()
+  //
+  //   const deckRef = firebase.database().ref("decks").child("kennynl")
+  //   deckRef.once("value", (snapshot) => {
+  //     const deck = snapshot.val()
+  //
+  //     const backId = Object.keys(deck.backs)[0]
+  //     const back = deck.backs[backId]
+  //
+  //     Object.keys(deck.faces).forEach((faceId) => {
+  //       const face = deck.faces[faceId]
+  //
+  //       Game.addCard(
+  //         firebase,
+  //         gameId,
+  //         Card.build({
+  //           face: face,
+  //           back: back,
+  //           size: deck.size,
+  //           position: [Math.random() * 600, Math.random() * 600, Object.keys(game.cards || {}).length],
+  //           angle: Math.random() * 359,
+  //           faceUp: (Math.random() * 30 > 15)
+  //         })
+  //       )
+  //     })
+  //   })
+  // },
 
   numberOfCards () {
     const { game } = this.props
@@ -85,6 +155,15 @@ export default React.createClass({
               <textarea id="game-description" className="materialize-textarea" value={game.description || ""} onChange={this.gameDescriptionChange} />
               <label htmlFor="game-description" className="active">What game are you playing?</label>
             </div>
+
+            {/*
+            <div>
+              <a href="#" className="waves-effect waves-light btn" onClick={this.gameAddDeck}>
+                <i className="material-icons left">add</i>Card
+              </a>
+            </div>
+            <br />
+            */}
 
             <div>
               <label>Number of cards</label>

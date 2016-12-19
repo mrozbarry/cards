@@ -25,19 +25,13 @@
 //   }, {})
 // }
 
-// Refactored from http://stackoverflow.com/a/12266311/661764
-function pastelColour(){
-  const rgb = [0, 1, 2].map(function () {
-    return (Math.round(Math.random()* 127) + 127).toString(16)
-  })
-  return "#" + rgb.join("")
-}
-
-export function build (position, angle) {
+export function build ({ face, back, size, position, angle, faceUp }) {
   return {
-    colour: pastelColour(),
-    position: position,
-    size: [100, 130],
-    angle: angle
+    face: face,
+    back: back,
+    position: [0, 1, 2].map((axis) => position[axis] || 0),
+    size: size,
+    angle: angle || 0,
+    faceUp: !!faceUp
   }
 }

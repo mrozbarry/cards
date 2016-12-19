@@ -7,16 +7,20 @@ const { object } = React.PropTypes
 export default React.createClass({
   displayName: "GameChatMessage",
 
+
   propTypes: {
-    message: object.isRequired,
-    player: object.isRequired
+    firebase: object.isRequired,
+    message: object.isRequired
   },
+
 
   getInitialState () {
     return {
-      vague: this.getVagueTime()
+      vague: this.getVagueTime(),
+      account: {}
     }
   },
+
 
   componentDidMount () {
     if (this.props.message.type == "say") {
@@ -26,13 +30,37 @@ export default React.createClass({
       }, 5000)
 
     }
+
+    this.accountRef =
+      this
+        .props
+        .firebase
+        .database()
+        .ref("accounts")
+        .child(this.props.message.accountId)
+
+    this.accountRef.on("value", this.handleAccountChange)
   },
+
 
   componentWillUnmount () {
     if (this.vagueInterval) {
       clearInterval(this.vagueInterval)
     }
+
+    this.accountRef.off("value", this.handleAccountChange)
   },
+
+
+  handleAccountChange (snapshot) {
+    const account = snapshot.val()
+      || { name: "Deleted", image: "http://placehold.it/64x64" }
+
+    this.setState({
+      account: account
+    })
+  },
+
 
   getVagueTime () {
     return vagueTime.get({
@@ -40,6 +68,7 @@ export default React.createClass({
       from: Date.now()
     })
   },
+
 
   render () {
     const { message } = this.props
@@ -51,14 +80,15 @@ export default React.createClass({
     }
   },
 
+
   renderSay (message) {
-    const { player } = this.props
+    const { account } = this.state
 
     return (
       <div className="game-chat__messages-item">
         <div className="game-chat__messages-item-who">
-          <img src={player.image} width="32" height="32" style={{ borderRadius: "50%" }} />
-          {player.name}
+          <img src={account.image} width="32" height="32" style={{ borderRadius: "50%" }} />
+          {account.name}
           <div style={{ flexGrow: 1 }} />
           <small>{this.state.vague}</small>
         </div>

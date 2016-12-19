@@ -1,0 +1,21 @@
+.game-card {
+  position: absolute;
+  transform-origin: 50% 50%;
+  box-sizing: border-box;
+  overflow: visible;
+  user-select: none;
+}
+
+.game-card__image {
+  background-color: transparent;
+}
+
+.game-card__image.game-card--interactive {
+  cursor: -webkit-grab;
+  cursor: grab;
+}
+
+.game-card__image.game-card--interactive:hover {
+  box-shadow: 0 0 30px 0 lightblue !important;
+}
+

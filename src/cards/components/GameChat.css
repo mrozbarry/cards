@@ -85,4 +85,7 @@
 
 .game-chat__you {
   width: 100%;
+  background-color: white;
+  padding: 10px;
+  padding-bottom: 0;
 }
