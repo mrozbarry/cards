@@ -7,6 +7,21 @@
         ".indexOn": ["state", "lastPingAt"]
       }
     },
+    "decks": {
+      "$deckId": {
+        ".indexOn": ["ownerId"],
+        "backs": {
+          "$backId": {
+            ".validate": "!newData || newData.isString()"
+          }
+        },
+        "faces": {
+          "$faceId": {
+            ".validate": "!newData || newData.isString()"
+          }
+        }
+      }
+    },
     "games": {
       "$gameId": {
         ".indexOn": ["ownerId", "visible"],
