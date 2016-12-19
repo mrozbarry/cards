@@ -1,6 +1,8 @@
 var Webpack = require("webpack")
 var path = require("path")
 
+var firebase = require("./firebase.json")
+
 var ROOT_PATH = path.resolve(__dirname, "..")
 
 module.exports = {
@@ -50,7 +52,8 @@ module.exports = {
     new Webpack.DefinePlugin({
       "process.env": {
         "NODE_ENV": JSON.stringify("production")
-      }
+      },
+      "FIREBASE_CONFIG": JSON.stringify(firebase.production)
     })
   ]
 }
