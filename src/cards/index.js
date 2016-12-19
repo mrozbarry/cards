@@ -15,9 +15,8 @@ import Game from "pages/Game"
 import Account from "pages/Account"
 
 import * as firebase from "firebase"
-import * as firebaseEnv from "lib/firebase"
 
-firebase.initializeApp(firebaseEnv[process.env.NODE_ENV])
+firebase.initializeApp(FIREBASE_CONFIG) // eslint-disable-line no-undef
 
 const { object } = React.PropTypes
 
@@ -30,7 +29,7 @@ const App = React.createClass({
   ],
 
   routes: {
-    "/": "renderHome",
+    "/": "renderGames",
     "/games": "renderGames",
     "/games/:id": "renderGame",
     "/games/:id/edit": "renderGameWithEdit",
