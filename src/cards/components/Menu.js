@@ -15,49 +15,19 @@ export default React.createClass({
     currentGameKey: string
   },
 
+
+  mixins: [
+    Game.GameListenerMixin({ saveToStateKey: "game", gameKeyFromPropKey: "currentGameKey"})
+  ],
+
+
   getInitialState () {
     return {
       toggleOpen: false,
-      error: null,
-      game: null
+      error: null
     }
   },
 
-  componentWillReceiveProps (nextProps) {
-    const { firebase } = this.props
-
-    console.log("Menu.willReceiveProps", nextProps, this.gameRef)
-
-    if (this.hasDifferentGameKey(nextProps)) {
-      this.gameRef =
-        firebase
-        .database()
-        .ref("games")
-        .child(nextProps.currentGameKey)
-
-      this.gameRef.on("value", this.handleGameChange)
-    } else if (!nextProps.currentGameKey && this.gameRef) {
-      this.gameRef.off("value", this.handleGameChange)
-      delete this.gameRef
-      this.setState({ game: null })
-    }
-  },
-
-  hasDifferentGameKey (nextProps) {
-    return !!nextProps.currentGameKey &&
-      this.props.currentGameKey != nextProps.currentGameKey
-  },
-
-  hasLostGameKey (nextProps) {
-    return !nextProps.currentGameKey &&
-      this.props.currentGameKey != nextProps.currentGameKey
-  },
-
-  handleGameChange (snapshot) {
-    this.setState({
-      game: snapshot.val()
-    })
-  },
 
   toggleMenu (e) {
     e.preventDefault()
@@ -67,6 +37,7 @@ export default React.createClass({
     })
   },
 
+
   signInAnonymously (e) {
     e.preventDefault()
 
@@ -74,6 +45,7 @@ export default React.createClass({
       this.setState({ error: error })
     })
   },
+
 
   signInWithGithub (e) {
     e.preventDefault()
@@ -85,11 +57,37 @@ export default React.createClass({
     })
   },
 
+
   signOut (e) {
     const { firebase } = this.props
     e.preventDefault()
     firebase.auth().signOut()
   },
+
+
+  joinGame (e) {
+    const { firebase, currentUser } = this.props
+    const { game } = this.state
+
+    e.preventDefault()
+
+    if (!Game.joinGame(firebase, game, currentUser)) {
+      alert("Looks like something went wrong, you don't have a game available to join.")
+    }
+  },
+
+
+  leaveGame (e) {
+    const { firebase, currentUser } = this.props
+    const { game } = this.state
+
+    e.preventDefault()
+
+    if (!Game.leaveGame(firebase, game, currentUser)) {
+      alert("Looks like something went wrong, you don't have a game available to leave.")
+    }
+  },
+
 
   getMenuClass () {
     if (this.state.toggleOpen) {
@@ -98,6 +96,7 @@ export default React.createClass({
       return "menu"
     }
   },
+
 
   render () {
     return (
@@ -111,7 +110,7 @@ export default React.createClass({
 
         <hr className="menu-separator" />
 
-        <a className="menu-item menu-item--highlight" href="/games">
+        <a className="menu-item menu-item--highlight" href="/">
           <div className="menu-item__icon fa fa-play" />
           <div className="menu-item__text">All Games</div>
         </a>
@@ -131,6 +130,7 @@ export default React.createClass({
     )
   },
 
+
   renderAccountLinks () {
     if (this.props.currentUser) {
       return [
@@ -149,14 +149,15 @@ export default React.createClass({
           <div className="menu-item__icon fa fa-user-secret" aria-hidden="true" />
           <div className="menu-item__text">Anonymously</div>
         </a>
-        ,
-        <a key="signin-github" className="menu-item menu-item--highlight" onClick={this.signInWithGithub} href="#github">
-          <div className="menu-item__icon fa fa-github-alt" />
-          <div className="menu-item__text">With Github</div>
-        </a>
+        // ,
+        // <a key="signin-github" className="menu-item menu-item--highlight" onClick={this.signInWithGithub} href="#github">
+        //   <div className="menu-item__icon fa fa-github-alt" />
+        //   <div className="menu-item__text">With Github</div>
+        // </a>
       ]
     }
   },
+
 
   renderGameLinks () {
     const { currentGameKey, currentUser } = this.props
@@ -197,6 +198,7 @@ export default React.createClass({
     return gameLinks
   },
 
+
   renderSignOut () {
     if (!this.props.currentUser) {
       return null
@@ -209,6 +211,7 @@ export default React.createClass({
       </a>
     )
   },
+
 
   renderMenuLink (text, url, options) {
     const opts = Object.assign({

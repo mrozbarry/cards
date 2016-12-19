@@ -3,7 +3,7 @@ import React from "react"
 const { object } = React.PropTypes
 
 export default React.createClass({
-  displayName: "GamesCard",
+  displayName: "GamesListItem",
 
   propTypes: {
     firebase: object.isRequired,
@@ -50,7 +50,7 @@ export default React.createClass({
         <a key="join" href={gameUrl}>Open Game</a>
       ]
 
-      if (currentUser && game.ownerId === currentUser.uid) {
+      if (currentUser && currentUser.uid && game.ownerId === currentUser.uid) {
         anchors.push(
           <a key="delete" href="#" onClick={this.deleteGame}>Delete Game</a>
         )

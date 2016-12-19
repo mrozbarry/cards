@@ -1,6 +1,6 @@
 import React from "react"
 
-import GamesCard from "components/GamesCard"
+import GamesListItem from "components/GamesListItem"
 
 import * as Game from "lib/game"
 
@@ -58,8 +58,7 @@ export default React.createClass({
 
   renderGames () {
     return this.state.games.filter((g) => {
-      return g.visible ||
-        (!g.visible && g.ownerId === this.props.currentUser.uid)
+      return Game.canSee(g, this.props.currentUser)
     }).map(this.renderGame)
   },
 
@@ -68,7 +67,7 @@ export default React.createClass({
 
     return (
       <div className="col s12 m6 l4" key={game._id}>
-        <GamesCard firebase={firebase} currentUser={currentUser} game={game} />
+        <GamesListItem firebase={firebase} currentUser={currentUser} game={game} />
       </div>
     )
   },

@@ -5,7 +5,7 @@ export default {
     }
   },
 
-  componentWillMount () {
+  componentDidMount () {
     const { firebase } = this.props
 
     this.gamesRef = firebase.database().ref("games")
