@@ -1,7 +1,7 @@
 import React from "react"
 
 import AccountEdit from "components/AccountEdit"
-import GamesCard from "components/GamesCard"
+import GameCard from "components/GameCard"
 
 import GamesMixin from "mixins/GamesMixin"
 
@@ -69,7 +69,7 @@ export default React.createClass({
     return games.map((game) => {
       return (
         <div key={game._id} className="col s12 m6 l4">
-          <GamesCard firebase={firebase} game={game} currentUser={currentUser} />
+          <GameCard firebase={firebase} game={game} currentUser={currentUser} />
         </div>
       )
     })
