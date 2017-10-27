@@ -1,5 +1,7 @@
 import React from "react"
 
+import paper from "../assets/old_paper_stock_02_by_ftourini-d48ubt0.png"
+
 const { object } = React.PropTypes
 
 export default React.createClass({

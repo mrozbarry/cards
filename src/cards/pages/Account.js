@@ -39,7 +39,7 @@ export default React.createClass({
             <AccountEdit
               firebase={this.props.firebase}
               currentUser={this.props.currentUser}
-              />
+            />
           </div>
         </div>
 

@@ -156,7 +156,7 @@ export default React.createClass({
             onChange={this.messageChange}
             onKeyUp={this.messageKeyUp}
             value={this.state.message}
-            />
+          />
         </div>
       )
     } else {
@@ -178,7 +178,7 @@ export default React.createClass({
             key={messageKey}
             message={message}
             firebase={firebase}
-            />
+          />
         )
       })
     } else {

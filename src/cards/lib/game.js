@@ -143,9 +143,9 @@ export const GameListenerMixin = function ({ saveToStateKey, gameKeyFromPropKey 
     handleGameValueChange (snapshot) {
       const game
         = Object
-        .assign({}, snapshot.val(), {
-          _id: snapshot.key
-        })
+          .assign({}, snapshot.val(), {
+            _id: snapshot.key
+          })
 
       this.setState({
         [saveToStateKey]: game

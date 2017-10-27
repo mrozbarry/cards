@@ -139,7 +139,7 @@ export default React.createClass({
           style={this.cardStyle()}
           onMouseDown={this.handleMouseDown}
           onDoubleClick={this.handleDoubleClick}
-          />
+        />
       </div>
     )
   }

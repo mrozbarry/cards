@@ -30,9 +30,9 @@ export default React.createClass({
 
     const gameRef =
       firebase
-      .database()
-      .ref("games")
-      .push()
+        .database()
+        .ref("games")
+        .push()
 
     gameRef.set(game).then(() => {
       navigate(`/games/${gameRef.key}/edit`)

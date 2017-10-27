@@ -1,90 +1,106 @@
+// eslint-globals FIREBASE_CONFIG
+
 import "./index.css"
 
-import React from "react"
+import React, { Component } from "react"
+import {
+  object
+} from "prop-types"
 import { render } from "react-dom"
 
-import { RouterMixin } from "react-mini-router"
+import {
+  BrowserRouter as Router,
+  Route,
+  Link,
+  Switch
+} from "react-router-dom"
 
-import AuthMixin from "mixins/AuthMixin"
+import Menu from "./components/Menu"
 
-import Menu from "components/Menu"
-
-import Home from "pages/Home"
-import GamesList from "pages/GamesList"
-import Game from "pages/Game"
-import Account from "pages/Account"
+import Home from "./pages/Home"
+// import GamesList from "pages/GamesList"
+// import Game from "pages/Game"
+// import Account from "pages/Account"
 
 import * as firebase from "firebase"
 
-firebase.initializeApp(FIREBASE_CONFIG) // eslint-disable-line no-undef
+firebase.initializeApp(FIREBASE_CONFIG)
 
-const { object } = React.PropTypes
+export default class App extends Component {
+  constructor (props) {
+    super(props)
 
-const App = React.createClass({
-  displayName: "App",
-
-  mixins: [
-    RouterMixin,
-    AuthMixin
-  ],
-
-  routes: {
-    "/": "renderGames",
-    "/games": "renderGames",
-    "/games/:id": "renderGame",
-    "/games/:id/edit": "renderGameWithEdit",
-    "/account": "renderAccount"
-  },
-
-  propTypes: {
-    firebase: object.isRequired
-  },
-
-  getInitialState () {
-    return {
+    this.state = {
       currentGameKey: null
     }
-  },
+  }
+
+  // routes: {
+  //   "/": "renderGames",
+  //   "/games": "renderGames",
+  //   "/games/:id": "renderGame",
+  //   "/games/:id/edit": "renderGameWithEdit",
+  //   "/account": "renderAccount"
+  // },
 
   setCurrentGameKey (gameKey) {
     this.setState({
       currentGameKey: gameKey
     })
-  },
+  }
+
 
   render () {
-    if (this.state.authStateHasChanged) {
-      return (
-        <div key="root">
-          {this.renderCurrentRoute()}
+    return (
+      <Router>
+        <div>
+          <Switch>
+            <Route render={this.renderHome.bind(this)} />
+          </Switch>
+
           <Menu
             firebase={this.props.firebase}
             currentUser={this.state.currentUser}
             currentGameKey={this.state.currentGameKey}
-            />
+          />
         </div>
-      )
-    } else {
-      return (
-        <div key="root">
-          {this.renderLoading()}
-        </div>
-      )
-    }
-  },
+      </Router>
+    )
+    // if (this.state.authStateHasChanged) {
+    //   return (
+    //     <div key="root">
+    //       {this.renderCurrentRoute()}
+    //       <Menu
+    //         firebase={this.props.firebase}
+    //         currentUser={this.state.currentUser}
+    //         currentGameKey={this.state.currentGameKey}
+    //       />
+    //     </div>
+    //   )
+    // } else {
+    //   return (
+    //     <div key="root">
+    //       {this.renderLoading()}
+    //     </div>
+    //   )
+    // }
+  }
+
 
   renderHome () {
     return <Home firebase={firebase} player={this.state.player} />
-  },
+  }
+
 
   renderGames () {
     return (
       <GamesList
         firebase={this.props.firebase}
         currentUser={this.state.currentUser}
-        />
+      />
     )
-  },
+  }
+
 
   renderGame (gameId) {
     const key = `game-${gameId}`
@@ -97,9 +113,10 @@ const App = React.createClass({
         editMode={false}
         currentUser={this.state.currentUser}
         setCurrentGameKey={this.setCurrentGameKey}
-        />
+      />
     )
-  },
+  }
+
 
   renderGameWithEdit (gameId) {
     const key = `game-${gameId}`
@@ -112,18 +129,20 @@ const App = React.createClass({
         editMode={true}
         currentUser={this.state.currentUser}
         setCurrentGameKey={this.setCurrentGameKey}
-        />
+      />
     )
-  },
+  }
+
 
   renderAccount () {
     return (
       <Account
         firebase={this.props.firebase}
         currentUser={this.state.currentUser}
-        />
+      />
     )
-  },
+  }
+
 
   renderLoading () {
     return (
@@ -144,8 +163,8 @@ const App = React.createClass({
       </div>
     )
   }
-})
+}
 
 document.addEventListener("DOMContentLoaded", () => {
-  render(<App history={true} firebase={firebase} />, document.getElementById("app"))
+  render(<App firebase={firebase} />, document.getElementById("app"))
 })

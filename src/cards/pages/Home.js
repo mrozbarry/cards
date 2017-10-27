@@ -1,98 +1,81 @@
-import React from "react"
+import React, { Component } from "react"
+import { Link } from "react-router-dom"
+import { firebaseCollectionToArray } from "../lib/array"
+import GamesHelper from "../helpers/GamesHelper"
 
-import GamesMixin from "mixins/GamesMixin"
-import PlayersMixin from "mixins/PlayersMixin"
+import img from "../assets/old_paper_stock_02_by_ftourini-d48ubt0.png"
 
-const { object } = React.PropTypes
 
-export default React.createClass({
-  displayName: "Home",
+export default class Home extends Component {
+  constructor (props) {
+    super(props)
 
-  mixins: [
-    GamesMixin,
-    PlayersMixin
-  ],
+    this.state = {
+      games: [],
+      players: []
+    }
 
-  propTypes: {
-    firebase: object.isRequired,
-    player: object
-  },
+    this.gamesHandler = new GamesHelper(this.props.firebase)
+  }
+
+
+  componentDidMount () {
+    this.gamesHandler.onValue(this._handleGamesValue.bind(this))
+  }
+
+
+  componentWillUnmount () {
+    this.gamesHandler.cleanup()
+  }
+
+
+  _handleGamesValue (snapshot) {
+    this.setState({ games: firebaseCollectionToArray(snapshot.val()) })
+  }
+
 
   getActiveGamesCount () {
     return this.state.games.length
-  },
+  }
+
 
   getOpenGamesCount () {
     return this.state.games.filter((game) => {
       return Object.keys(game.players || {}).length < game.maxPlayers
     }).length
-  },
+  }
+
 
   getPlayersOnline () {
     return this.state.players.filter((player) => player.state == "online").length
-  },
+  }
+
 
   render () {
     return (
       <div>
-        <div className="container">
-          <div className="row">
-            <div className="col s12">
-              <h1 className="white-text">Welcome to Cards</h1>
-              <p className="white-text">
-                Cards is an online platform to play cards the way you and your friends want. We don't enforce rules, and just want you to have fun, your way.
-              </p>
-              {this.renderInstructions()}
-            </div>
-          </div>
-          <div className="row">
-            {this.renderCard("Active Games", this.getActiveGamesCount())}
-            {this.renderCard("Open Games", this.getOpenGamesCount())}
-            {this.renderCard("Players Online", this.getPlayersOnline())}
-          </div>
+        <div style={{ fontFamily: "'Dust West', sans", margin: "0 auto", padding: "32px", paddingRight: "85px", backgroundRepeat: "no-repeat", backgroundSize: "contain", backgroundImage: `url(${img})`, width: "900px", height: "1199px",  }}>
+          <h1 style={{ textAlign: "center", fontSize: "150px" }}>~ Wanted ~</h1>
+          <h2 style={{ textAlign: "center" }}>Card Players</h2>
 
-          <div className="row">
-            <div className="col s12">
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  },
-
-  renderInstructions () {
-    if (this.props.player) {
-      return (
-        <p className="white-text">
-          Thanks for signing in! Check out the red gamepad icon for a games list, or the blue face icon for modifying your profile.
-        </p>
-      )
-    } else {
-      return (
-        <p className="white-text">
-          To get started, sign in using the <b>plus person</b> icon in the menu.  Worried about your personal data?  Just sign in anonymously!
-        </p>
-      )
-    }
-  },
-
-  renderCard (title, number, color, textColor) {
-    color = color || "teal"
-    textColor = textColor || "white"
-
-    const cardClasses = [
-      "card-panel",
-      color,
-      `${textColor}-text`
-    ].join(" ")
-
-    return (
-      <div className="col s12 m6 l4">
-        <div className={cardClasses} style={{ textAlign: "center" }}>
-          <h4>{title}</h4>
-          <h2>{number}</h2>
+          <ol style={{ listStyle: "none", margin: 0, padding: "64px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", marginTop: "-16px" }}>
+            {this.state.games.filter(({ visible }) => visible).map(this.renderGame)}
+          </ol>
         </div>
       </div>
     )
   }
-})
+
+
+  renderGame (game) {
+    const href = `/games/${game._id}`
+    return (
+      <li key={game._id} style={{ width: "70%", border: "5px black solid", padding: "16px", margin: "16px" }}>
+        <h3 style={{ marginBottom: "8px" }}>
+          <Link to={href} style={{ color: "#444" }}>{game.name}</Link>
+        </h3>
+        <span style={{ fontSize: "18px" }}>Is a <strong>public</strong> game with <u>{Object.keys(game.players).length}</u> players.</span>
+      </li>
+    )
+  }
+}

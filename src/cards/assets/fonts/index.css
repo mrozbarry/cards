@@ -1,0 +1,13 @@
+/*
+ * Dust West
+ * By Galdino Otten <http://galdinootten.com/>
+ * https://www.dafont.com/dust-west.font
+ */
+@font-face {
+  font-family: 'Dust West';
+  src: url('./Dust West.otf');
+  src: url('./Dust West.otf') format('truetype'),
+       url('./Dust West.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}

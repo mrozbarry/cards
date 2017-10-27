@@ -3,3 +3,4 @@ config/firebase.json
 firebase.json
 .firebaserc
 public/bundle.js
+.DS_Store

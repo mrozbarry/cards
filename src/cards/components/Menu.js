@@ -1,32 +1,30 @@
 import "./Menu.css"
 
-import React from "react"
+import React, { Component } from "react"
 
-import * as Game from "lib/game"
+import * as Game from "../lib/game"
 
-const { object, string } = React.PropTypes
-
-export default React.createClass({
-  displayName: "Menu",
-
-  propTypes: {
-    firebase: object.isRequired,
-    currentUser: object,
-    currentGameKey: string
-  },
-
-
-  mixins: [
-    Game.GameListenerMixin({ saveToStateKey: "game", gameKeyFromPropKey: "currentGameKey"})
-  ],
-
-
-  getInitialState () {
-    return {
+export default class Menu extends Component {
+  constructor (props) {
+    super(props)
+    this.state = {
       toggleOpen: false,
       error: null
     }
-  },
+  }
+// export default React.createClass({
+//   displayName: "Menu",
+
+  // propTypes: {
+  //   firebase: object.isRequired,
+  //   currentUser: object,
+  //   currentGameKey: string
+  // },
+  //
+  //
+  // mixins: [
+  //   Game.GameListenerMixin({ saveToStateKey: "game", gameKeyFromPropKey: "currentGameKey"})
+  // ],
 
 
   toggleMenu (e) {
@@ -35,7 +33,7 @@ export default React.createClass({
     this.setState({
       toggleOpen: !this.state.toggleOpen
     })
-  },
+  }
 
 
   signInAnonymously (e) {
@@ -44,7 +42,7 @@ export default React.createClass({
     this.props.firebase.auth().signInAnonymously().catch((error) => {
       this.setState({ error: error })
     })
-  },
+  }
 
 
   signInWithGithub (e) {
@@ -55,14 +53,14 @@ export default React.createClass({
     this.props.firebase.auth().signInWithPopup(provider).catch((error) => {
       this.setState({ error: error })
     })
-  },
+  }
 
 
   signOut (e) {
     const { firebase } = this.props
     e.preventDefault()
     firebase.auth().signOut()
-  },
+  }
 
 
   joinGame (e) {
@@ -74,7 +72,7 @@ export default React.createClass({
     if (!Game.joinGame(firebase, game, currentUser)) {
       alert("Looks like something went wrong, you don't have a game available to join.")
     }
-  },
+  }
 
 
   leaveGame (e) {
@@ -86,7 +84,7 @@ export default React.createClass({
     if (!Game.leaveGame(firebase, game, currentUser)) {
       alert("Looks like something went wrong, you don't have a game available to leave.")
     }
-  },
+  }
 
 
   getMenuClass () {
@@ -95,7 +93,7 @@ export default React.createClass({
     } else {
       return "menu"
     }
-  },
+  }
 
 
   render () {
@@ -128,7 +126,7 @@ export default React.createClass({
 
       </div>
     )
-  },
+  }
 
 
   renderAccountLinks () {
@@ -156,7 +154,7 @@ export default React.createClass({
         // </a>
       ]
     }
-  },
+  }
 
 
   renderGameLinks () {
@@ -196,7 +194,7 @@ export default React.createClass({
     }
 
     return gameLinks
-  },
+  }
 
 
   renderSignOut () {
@@ -210,7 +208,7 @@ export default React.createClass({
         <div className="menu-item__text">Sign Out</div>
       </a>
     )
-  },
+  }
 
 
   renderMenuLink (text, url, options) {
@@ -237,4 +235,4 @@ export default React.createClass({
       </a>
     )
   }
-})
+}

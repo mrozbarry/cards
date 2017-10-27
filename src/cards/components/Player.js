@@ -59,7 +59,7 @@ export default React.createClass({
             onDragStart={this.dragStart.bind(this, cardKey)}
             onDragEnd={this.dragEnd.bind(this, cardKey)}
             style={{ zIndex: 100 - idx }}
-            />
+          />
         )
       } else {
         return (
@@ -68,7 +68,7 @@ export default React.createClass({
             className="player-card"
             //src={imageContext(`./cards/Back/${deckIdxToName[card.deckIdx]}.png`)}
             style={{ zIndex: 100 - idx }}
-            />
+          />
         )
       }
     })

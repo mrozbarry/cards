@@ -22,25 +22,27 @@ module.exports = {
   },
 
   module: {
-    loaders: [
+    rules: [
       {
         test: /\.js$/,
         include: path.resolve(ROOT_PATH, "src"),
-        loaders: ["babel?cacheDirectory"]
+        loaders: ["babel-loader?cacheDirectory"]
       },
       {
         test: /\.css$/,
         include: path.resolve(ROOT_PATH, "src"),
-        loaders: ["style", "css"]
+        loaders: ["style-loader", "css-loader"]
+      },
+      {
+        test: /\.png/,
+        include: path.resolve(ROOT_PATH, "src"),
+        loaders: ["url-loader?limit=10000", "img-loader"]
+      },
+      {
+        test: /\.(eot|svg|ttf|otf|woff|woff2)$/,
+        include: path.resolve(ROOT_PATH, "src"),
+        loaders: ["file-loader?name=./assets/fonts/[name].[ext]"]
       }
-    ]
-  },
-
-  resolve: {
-    extensions: ["", ".js"],
-    root: [
-      path.resolve(ROOT_PATH, "src"),
-      path.resolve(ROOT_PATH, "src", "cards")
     ]
   },
 

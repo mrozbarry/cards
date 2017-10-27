@@ -390,7 +390,7 @@ export default React.createClass({
           messages={messages}
           say={this.say}
           interactive={interactive}
-          />
+        />
         {this.renderEdit()}
       </div>
     )
@@ -418,7 +418,7 @@ export default React.createClass({
           setHandCard={this.setHandCard}
           isHandCard={isHandCard}
           flipCard={this.flipCard}
-          />
+        />
       )
     })
   },
@@ -434,7 +434,7 @@ export default React.createClass({
           firebase={firebase}
           gameId={gameId}
           game={game}
-          />
+        />
       )
     } else {
       return null
